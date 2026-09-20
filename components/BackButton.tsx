@@ -1,2 +1,2 @@
 "use client";import {ArrowLeft} from "lucide-react";import {useRouter} from "next/navigation";
-export default function BackButton({fallback="/"}:{fallback?:string}){const r=useRouter();return <button className="backBtn" onClick={()=>{if(window.history.length>1)r.back();else r.push(fallback)}} aria-label="Go back"><ArrowLeft size={18}/> Back</button>}
+export default function BackButton({fallback="/"}:{fallback?:string}){const r=useRouter();return <button className="backBtn" onClick={()=>{const ref=document.referrer;const same=ref&&new URL(ref).origin===window.location.origin;if(same)r.back();else r.push(fallback)}} aria-label="Go back"><ArrowLeft size={18}/> Back</button>}
