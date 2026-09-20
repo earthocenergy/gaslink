@@ -5,7 +5,7 @@ import Link from "next/link";import BackButton from "@/components/BackButton";
 export default function AuthPage(){
  const [mode,setMode]=useState<"signin"|"signup">("signin"),[email,setEmail]=useState(""),[password,setPassword]=useState(""),[name,setName]=useState(""),[msg,setMsg]=useState(""),[busy,setBusy]=useState(false);
  async function submit(e:FormEvent){e.preventDefault();setBusy(true);setMsg("");const s=createClient();
-  if(mode==="signup"){const {error}=await s.auth.signUp({email,password,options:{data:{full_name:name}}});setMsg(error?error.message:"Account created. Check your email if confirmation is required.");}
+  if(mode==="signup"){const {error}=await s.auth.signUp({email,password,options:{data:{full_name:name}}});if(error)setMsg(error.message);else setMsg("Account created. You can now use GasLink as a driver and buyer. Check your email if confirmation is required.");}
   else {const {error}=await s.auth.signInWithPassword({email,password});if(error)setMsg(error.message);else window.location.href="/dashboard";}
   setBusy(false);
  }
