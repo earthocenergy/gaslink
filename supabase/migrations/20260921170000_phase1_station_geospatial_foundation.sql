@@ -58,14 +58,14 @@ create or replace function public.stamp_station_operational_freshness()
 returns trigger
 language plpgsql
 set search_path = ''
-as $
+as $$
 begin
   if new.status is distinct from old.status then new.status_updated_at := now(); end if;
   if new.price_per_scm is distinct from old.price_per_scm then new.price_updated_at := now(); end if;
   if new.queue_minutes is distinct from old.queue_minutes then new.queue_updated_at := now(); end if;
   return new;
 end
-$;
+$$;
 
 drop trigger if exists stamp_station_operational_freshness on public.stations;
 create trigger stamp_station_operational_freshness
