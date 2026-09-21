@@ -1,0 +1,22 @@
+{
+  "source_name": "CNGx isolated importer fixture",
+  "source_url": "https://example.invalid/test-only",
+  "observed_at": "2026-09-21",
+  "records": [
+    {
+      "source_reference": "picng-test-c-000000000000000000000003",
+      "region": "QA",
+      "operator": "Fixture Gas A",
+      "address": "1 Test Road",
+      "state": "QA",
+      "latitude": null,
+      "longitude": null,
+      "location_precision": "unconfirmed",
+      "location_source_type": null,
+      "location_source_name": null,
+      "location_source_url": null,
+      "location_source_observed_at": null,
+      "source_url": "https://example.invalid/test-only"
+    }
+  ]
+}
