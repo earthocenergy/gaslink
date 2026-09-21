@@ -9,6 +9,8 @@ do $$ begin
   if not has_schema_privilege('anon','gis','USAGE') or not has_schema_privilege('authenticated','gis','USAGE') then raise exception 'GIS USAGE missing'; end if;
   if has_function_privilege('anon','public.sync_station_geography()','EXECUTE') or has_function_privilege('authenticated','public.sync_station_geography()','EXECUTE') then raise exception 'sync trigger directly executable'; end if;
   if has_function_privilege('anon','public.stamp_station_operational_freshness()','EXECUTE') or has_function_privilege('authenticated','public.stamp_station_operational_freshness()','EXECUTE') then raise exception 'freshness trigger directly executable'; end if;
+  if exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='nearby_stations' and p.prosecdef) then raise exception 'nearby_stations must remain SECURITY INVOKER'; end if;
+  if not exists(select 1 from pg_policies where schemaname='public' and tablename='user_roles' and policyname='users add own ordinary roles' and with_check like '%driver%' and with_check like '%buyer%' and with_check not like '%seller%' and with_check not like '%operator%' and with_check not like '%service_provider%' and with_check not like '%admin%') then raise exception 'Phase 0 user_roles self-assignment boundary changed'; end if;
 end $$;
 
 insert into public.stations(id,name,address,state,latitude,longitude,is_demo,is_verified,registration_status,record_source_type,location_precision)
