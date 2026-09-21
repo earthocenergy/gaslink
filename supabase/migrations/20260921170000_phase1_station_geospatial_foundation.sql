@@ -4,7 +4,7 @@ create schema if not exists gis;
 create extension if not exists postgis with schema gis;
 
 alter table public.stations
-  add column if not exists record_source_type text not null default 'demo',
+  add column if not exists record_source_type text not null default 'other',
   add column if not exists record_source_name text,
   add column if not exists record_source_url text,
   add column if not exists record_source_reference text,
@@ -14,6 +14,8 @@ alter table public.stations
   add column if not exists price_updated_at timestamptz,
   add column if not exists queue_updated_at timestamptz,
   add column if not exists location gis.geography(Point,4326);
+
+update public.stations set record_source_type='demo' where is_demo=true and record_source_type='other';
 
 alter table public.stations
   add constraint stations_record_source_type_check check (record_source_type in ('demo','official_directory','operator','admin','other')),
@@ -39,7 +41,7 @@ $$;
 
 drop trigger if exists sync_station_geography on public.stations;
 create trigger sync_station_geography
-before insert or update of latitude,longitude on public.stations
+before insert or update of latitude,longitude,location on public.stations
 for each row execute function public.sync_station_geography();
 
 update public.stations
