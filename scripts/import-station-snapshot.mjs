@@ -5,8 +5,8 @@ import { createClient } from "@supabase/supabase-js";
 // CNGx curated station importer. DRY RUN by default; --apply requires explicit approval.
 const apply=process.argv.includes("--apply");
 const fileArg=process.argv.find(x=>x.endsWith(".json"))||"data/sources/picng-refuelling-stations-2026-09-21.json";
-const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;
-if(!url||!key) throw new Error("NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required (server/admin only).");
+const url=process.env.SUPABASE_URL||process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;
+if(!url||!key) throw new Error("SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL fallback) and SUPABASE_SERVICE_ROLE_KEY are required (server/admin only).");
 const snapshot=JSON.parse(fs.readFileSync(fileArg,"utf8"));
 const db=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
 const norm=v=>(v||"").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g," ").trim().replace(/\s+/g," ");
@@ -24,7 +24,7 @@ for(const r of snapshot.records){
  const matches=byFingerprint.get(fingerprint(r))||[];
  if(matches.length){stats.possible_duplicate++;planned.push({action:"possible_duplicate",source_reference:r.source_reference,ids:matches.map(x=>x.id),claimed:matches.some(x=>!!x.claimed_by)});continue;}
  stats.new++;planned.push({action:"new",source_reference:r.source_reference});
- if(apply){const payload={name:r.operator+" — "+(r.address==="Address pending confirmation"?r.state:r.address),operator_name:r.operator,address:r.address,state:r.state,latitude:r.latitude,longitude:r.longitude,status:"unknown",price_per_scm:null,queue_minutes:null,open_now:null,is_demo:false,is_verified:false,registration_status:"pending",record_source_type:"official_directory",record_source_name:snapshot.source_name,record_source_url:r.source_url,record_source_reference:r.source_reference,record_source_observed_at:snapshot.observed_at,location_precision:r.location_precision,status_updated_at:null,price_updated_at:null,queue_updated_at:null,last_verified_at:null};const {error:e}=await db.from("stations").insert(payload);if(e)throw e;}
+ if(apply){const payload={name:r.operator+" — "+(r.address==="Address pending confirmation"?r.state:r.address),operator_name:r.operator,address:r.address,state:r.state,latitude:r.latitude,longitude:r.longitude,status:"unknown",price_per_scm:null,queue_minutes:null,open_now:null,is_demo:false,is_verified:false,registration_status:"pending",record_source_type:"official_directory",record_source_name:snapshot.source_name,record_source_url:r.source_url,record_source_reference:r.source_reference,record_source_observed_at:snapshot.observed_at,location_precision:r.location_precision,location_source_type:r.location_source_type??null,location_source_name:r.location_source_name??null,location_source_url:r.location_source_url??null,location_source_observed_at:r.location_source_observed_at??null,status_updated_at:null,price_updated_at:null,queue_updated_at:null,last_verified_at:null};const {error:e}=await db.from("stations").insert(payload);if(e)throw e;}
 }
 console.log(JSON.stringify({mode:apply?"APPLY":"DRY_RUN",source:fileArg,counts:stats,details:planned},null,2));
 if(!apply)console.error("DRY RUN only. No rows inserted. --apply requires explicit product-lead approval.");
