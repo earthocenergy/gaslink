@@ -6,6 +6,11 @@ Core promise: Find gas. Know before you go.
 
 Phase 0 includes CNG station discovery/status, clearly labelled demo data, trip-planning fallback, CNG savings calculator, role architecture, and Supabase PostgreSQL/Auth/Realtime.
 
-Copy .env.example to .env.local and use the CNGx Supabase publishable key. Never commit Supabase secret/service-role keys.
+Copy .env.example to .env.local and use the Supabase publishable key. Never commit Supabase secret/service-role keys.
 
 Earthoc Gas Limited.
+
+
+## Product ownership
+
+CNGx is a product of Earthoc Gas Limited.
