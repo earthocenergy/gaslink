@@ -46,6 +46,25 @@ update public.stations
 set location = gis.st_setsrid(gis.st_makepoint(longitude,latitude),4326)::gis.geography
 where latitude is not null and longitude is not null;
 
+
+create or replace function public.stamp_station_operational_freshness()
+returns trigger
+language plpgsql
+set search_path = ''
+as $
+begin
+  if new.status is distinct from old.status then new.status_updated_at := now(); end if;
+  if new.price_per_scm is distinct from old.price_per_scm then new.price_updated_at := now(); end if;
+  if new.queue_minutes is distinct from old.queue_minutes then new.queue_updated_at := now(); end if;
+  return new;
+end
+$;
+
+drop trigger if exists stamp_station_operational_freshness on public.stations;
+create trigger stamp_station_operational_freshness
+before update of status,price_per_scm,queue_minutes on public.stations
+for each row execute function public.stamp_station_operational_freshness();
+
 create index if not exists stations_location_gist_idx on public.stations using gist(location);
 create unique index if not exists stations_source_reference_unique_idx
   on public.stations(record_source_type,record_source_reference)
