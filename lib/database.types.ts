@@ -513,6 +513,12 @@ export type Database = {
           is_verified: boolean
           last_verified_at: string | null
           latitude: number | null
+          location: unknown
+          location_precision: string
+          location_source_name: string | null
+          location_source_observed_at: string | null
+          location_source_type: string | null
+          location_source_url: string | null
           longitude: number | null
           name: string
           open_now: boolean | null
@@ -520,10 +526,18 @@ export type Database = {
           operator_name: string | null
           phone: string | null
           price_per_scm: number | null
+          price_updated_at: string | null
           queue_minutes: number | null
+          queue_updated_at: string | null
+          record_source_name: string | null
+          record_source_observed_at: string | null
+          record_source_reference: string | null
+          record_source_type: string
+          record_source_url: string | null
           registration_status: string
           state: string | null
           status: Database["public"]["Enums"]["station_status"]
+          status_updated_at: string | null
           submitted_by: string | null
           updated_at: string
           vehicle_compatibility: string[]
@@ -539,6 +553,12 @@ export type Database = {
           is_verified?: boolean
           last_verified_at?: string | null
           latitude?: number | null
+          location?: unknown
+          location_precision?: string
+          location_source_name?: string | null
+          location_source_observed_at?: string | null
+          location_source_type?: string | null
+          location_source_url?: string | null
           longitude?: number | null
           name: string
           open_now?: boolean | null
@@ -546,10 +566,18 @@ export type Database = {
           operator_name?: string | null
           phone?: string | null
           price_per_scm?: number | null
+          price_updated_at?: string | null
           queue_minutes?: number | null
+          queue_updated_at?: string | null
+          record_source_name?: string | null
+          record_source_observed_at?: string | null
+          record_source_reference?: string | null
+          record_source_type?: string
+          record_source_url?: string | null
           registration_status?: string
           state?: string | null
           status?: Database["public"]["Enums"]["station_status"]
+          status_updated_at?: string | null
           submitted_by?: string | null
           updated_at?: string
           vehicle_compatibility?: string[]
@@ -565,6 +593,12 @@ export type Database = {
           is_verified?: boolean
           last_verified_at?: string | null
           latitude?: number | null
+          location?: unknown
+          location_precision?: string
+          location_source_name?: string | null
+          location_source_observed_at?: string | null
+          location_source_type?: string | null
+          location_source_url?: string | null
           longitude?: number | null
           name?: string
           open_now?: boolean | null
@@ -572,10 +606,18 @@ export type Database = {
           operator_name?: string | null
           phone?: string | null
           price_per_scm?: number | null
+          price_updated_at?: string | null
           queue_minutes?: number | null
+          queue_updated_at?: string | null
+          record_source_name?: string | null
+          record_source_observed_at?: string | null
+          record_source_reference?: string | null
+          record_source_type?: string
+          record_source_url?: string | null
           registration_status?: string
           state?: string | null
           status?: Database["public"]["Enums"]["station_status"]
+          status_updated_at?: string | null
           submitted_by?: string | null
           updated_at?: string
           vehicle_compatibility?: string[]
@@ -645,6 +687,44 @@ export type Database = {
       approve_station_registration: {
         Args: { p_approve: boolean; p_station_id: string }
         Returns: undefined
+      }
+      nearby_stations: {
+        Args: {
+          p_latitude: number
+          p_limit?: number
+          p_longitude: number
+          p_radius_meters?: number
+        }
+        Returns: {
+          address: string
+          city: string
+          distance_meters: number
+          id: string
+          is_verified: boolean
+          last_verified_at: string
+          latitude: number
+          location_precision: string
+          location_source_name: string
+          location_source_observed_at: string
+          location_source_type: string
+          location_source_url: string
+          longitude: number
+          name: string
+          open_now: boolean
+          operator_name: string
+          price_per_scm: number
+          price_updated_at: string
+          queue_minutes: number
+          queue_updated_at: string
+          record_source_name: string
+          record_source_observed_at: string
+          record_source_reference: string
+          record_source_type: string
+          record_source_url: string
+          state: string
+          status: Database["public"]["Enums"]["station_status"]
+          status_updated_at: string
+        }[]
       }
     }
     Enums: {
