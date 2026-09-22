@@ -1,33 +1,28 @@
 # Mapbox Permanent Geocoding pilot
 
 ## Status
-The pilot pipeline is prepared but no external geocoding request has been made in this branch because a server-only `MAPBOX_ACCESS_TOKEN` was not available to the execution environment. The tool therefore remains at its configuration gate.
+The pilot pipeline is hardened for Mapbox Geocoding API v6 response semantics but remains fully offline. No external geocoding request has been made. A server-only `MAPBOX_ACCESS_TOKEN` is intentionally not requested or stored by this branch.
 
 ## Provider and storage contract
-This pilot is exclusively for **Mapbox Geocoding API v6 Permanent Geocoding**. Every executable request sets `permanent=true`, `country=NG`, and `autocomplete=false`. Search Box, temporary Mapbox geocoding, Google, Nominatim, and other providers are not fallback paths.
+Executable requests are exclusively Mapbox Geocoding API v6 Permanent Geocoding and set `permanent=true`, `country=NG`, `autocomplete=false`, and `limit=5`. Search Box, temporary Mapbox geocoding and alternate providers are not fallback paths.
 
-Persisted Mapbox results are intended for CNGx's planned Mapbox-based mapping/navigation experience. They are not provider-neutral; if CNGx changes mapping provider, licensing and stored-coordinate use must be reviewed again.
+## Response parsing and review
+Geocoding v6 object context is authoritative: `properties.context.country`, `region`, `place`, `district`, and `locality` are read safely by name/display fields. Legacy array context is tolerated only as backwards compatibility.
 
-## Secret handling
-The script reads only `MAPBOX_ACCESS_TOKEN` as its provider credential. It does not print or persist the token and refuses execution without it. Plain execution and `--pilot` alone make zero external requests. External calls require both `--pilot --execute`. The script never connects to Supabase.
+Each billable query may return up to five compact candidates. The tool evaluates candidate state, locality/address evidence, feature type, Smart Address Match confidence/component match codes and coordinate accuracy. Exactly one clearly superior candidate may proceed to normal classification. Two or more materially plausible candidates force `manual_review` while compact alternate evidence is retained.
 
-## Pilot sample
-The exact sample is source-controlled in `data/enrichment/mapbox-permanent-geocoding-pilot-sample-2026-09-22.json`. It contains 12 valid address-bearing records spanning all six geopolitical regions and a mixture of street, highway/corridor, landmark and less-structured Nigerian addresses.
+`candidate_exact` fails closed: positive returned-region evidence matching the source state is required; confidence must be exact/high; feature type must be address; accuracy must be rooftop/parcel/point; and region or other critical component match-code contradictions prevent exact classification. Interpolated/approximate/intersection positions are never facility-level exact.
 
-The immutable source has only one non-placeholder North-East address. The remaining North-East entries are `Address pending confirmation`, so they are excluded rather than consuming API requests. The twelfth slot is an additional South-West corridor/landmark case.
+## Query discipline
+Variant 1 is normalized full source address + state. Variant 2 preserves the same meaningful address components and state while normalizing common road/street/landmark abbreviations and punctuation. Both remain constrained by `country=NG`. A second query is allowed only when the first is absent/rejected/unresolved. Hard ceiling remains 24 searches.
 
-## Request discipline
-One normalized address + state query is attempted first. A maximum of one second normalized variant is allowed only when the first result is absent or clearly unusable. The hard ceiling is 24 billable requests.
+## Secret/request safety
+Plain execution and `--pilot` alone make zero requests. External calls require both `--pilot --execute` plus server-only `MAPBOX_ACCESS_TOKEN`. Execution is refused if `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` is present. The token is never printed or persisted. The script never connects to Supabase.
 
-## Candidate gates
-Mapbox is a candidate provider, not CNGx verification. `candidate_exact` requires address-level output, compatible state/locality, exact/high match confidence, no contradictory address component, and rooftop/parcel/point coordinate accuracy. Broad place/state/locality results cannot be exact. Plausible lower-precision address/street/corridor results become `candidate_approximate`; uncertain cases require manual review; contradictions are rejected.
+## Offline verification
+`node scripts/test-geocode-station-locations-mapbox.mjs` covers v6 object-context parsing, region/place extraction, wrong-state rejection, missing-region fail-closed behavior, exact/high + rooftop/parcel/point exact eligibility, interpolated exclusion, medium/low exclusion, component-match contradiction, multi-candidate ambiguity, state-preserving distinct query variants, and token non-emission.
 
-## Current factual distribution
-External requests: **0**. Billable requests: **0**. Exact: **0**. Approximate: **0**. Manual review: **0**. Rejected: **0**. Pilot results unresolved pending provider execution: **12**.
-
-Because no provider call has occurred, there is no factual confidence/accuracy distribution, no state-mismatch result, no centroid result and no duplicate-coordinate result to report yet.
+External requests: **0**. Billable requests: **0**. No final provider-result artifact is created by this hardening step.
 
 ## Acceptance gate
-No recommendation for full 90-record geocoding can be made until the 12-record permanent pilot is actually executed and reviewed. Before execution, confirm the configured Mapbox account permits Permanent Geocoding and provide `MAPBOX_ACCESS_TOKEN` only through an approved server/admin environment.
-
-No production database write, station import or migration is part of this pilot.
+The next gate is Mapbox account/server setup and then the separately authorized 12-record permanent pilot. No full 90-record geocoding, production write, station import or migration is authorized.
