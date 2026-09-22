@@ -1,0 +1,15 @@
+{
+  "source_snapshot": "data/sources/picng-refuelling-stations-2026-09-21.json",
+  "created_at": "2026-09-22",
+  "candidate_groups": [],
+  "excluded_non_evidence": [
+    {
+      "pattern": "Address pending confirmation",
+      "note": "Repeated placeholder addresses within a state are not evidence that listings are the same physical station."
+    }
+  ],
+  "summary": {
+    "candidate_group_count": 0,
+    "records_in_candidate_groups": 0
+  }
+}
