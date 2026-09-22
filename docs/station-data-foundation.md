@@ -78,14 +78,57 @@ Expected first-run classification against the current database after migration a
 
 This is a static/read-only dry-run expectation, not an applied import.
 
-## Test status
+## Isolated runtime test — PASS
 
-No local Supabase/PostGIS database is available in the current execution environment, and production was not used as an experimental database. Therefore coordinate-trigger, KNN/radius/limit and RLS RPC tests are pending application to an isolated Supabase branch/local database.
+The Phase-1 migration was executed successfully in a temporary isolated Supabase project. Production remained untouched.
 
-Generated TypeScript types were not hand-edited. Regenerate `lib/database.types.ts` from the isolated database after applying the migration, then commit the generated output before production migration approval.
+Confirmed runtime results:
+- PostGIS 3.3.7 installed in dedicated `gis` schema, not `public`.
+- `anon` and `authenticated` have required GIS `USAGE` and do not have GIS `CREATE`.
+- internal station trigger functions are not directly executable by `anon`/`authenticated`.
+- `nearby_stations` remains `SECURITY INVOKER`.
+- valid latitude/longitude generate synchronized geography, and direct `location` modification cannot diverge from latitude/longitude.
+- invalid latitude, invalid longitude and partial coordinate pairs are rejected.
+- unrelated station updates do not refresh operational timestamps.
+- status, price and queue changes independently stamp `status_updated_at`, `price_updated_at` and `queue_updated_at`.
+- nearest ordering, radius filtering and result limiting passed.
+- anonymous callers can retrieve approved geospatial stations and cannot retrieve rejected/private stations.
+- the Phase-0 `user_roles` self-assignment restriction remained intact.
+- Supabase security advisor after migration: **0 findings**.
+- Supabase performance advisor after migration: **0 findings**.
 
-## Pre-test harnesses
+The controlled importer database fixture also passed: clean first-run state, two safe pending/unverified records with unknown/null operational defaults, idempotent second identity run, source-reference conflict detection, normalized-identity possible-duplicate detection, preservation of claimed/operator-managed operational values, and stable final row count.
 
-`supabase/tests/phase1_station_geospatial_foundation.sql` is a transaction/rollback harness for the future isolated database. It covers PostGIS schema placement/permissions, geography synchronization, coordinate constraints, independent freshness timestamps, proximity ordering/radius/limit, anonymous approved visibility, rejected-row RLS exclusion, and trigger-function direct-execution revocation.
+### Importer execution limitation
 
-Small importer fixtures live under `tests/fixtures/importer/` and cover first/second run idempotency, source-reference conflict, normalized-identity possible duplicate, and preservation of claimed/operator operational state.
+The exact `scripts/import-station-snapshot.mjs` Node process was **not** executed through its real service-role-key path during the isolated test because the available test environment did not expose the isolated project's service-role secret and the external execution environment could not install the required package. This is not a database-foundation blocker.
+
+Before any national `--apply` is authorized, the exact script must run in an approved server/admin environment with a real server-only `SUPABASE_SERVICE_ROLE_KEY`, first in default **DRY RUN** mode. A national apply remains a separate explicit product-lead gate.
+
+### TypeScript types
+
+Types were generated successfully from the migrated isolated project, but that project intentionally contained only the production-equivalent subset needed for stations, `user_roles` security, PostGIS and `nearby_stations`. Its generated type output is therefore incomplete for the full production application and must **not** replace `lib/database.types.ts`.
+
+After the Phase-1 migration is approved and applied to production:
+1. generate fresh TypeScript types directly from the production Supabase project;
+2. update `lib/database.types.ts`;
+3. verify all existing production tables/types remain represented;
+4. verify the new station provenance/geospatial/freshness fields and `nearby_stations` RPC are represented;
+5. commit that complete generated file in the production-migration closeout branch.
+
+## Production migration procedure — next gate
+
+Production closeout must use this sequence:
+
+1. Merge the reviewed Phase-1 foundation branch to `main`.
+2. Confirm the resulting production Vercel deployment remains green.
+3. Apply **only** `20260921170000_phase1_station_geospatial_foundation` to production Supabase.
+4. **Do not import directory stations.**
+5. Verify the production schema, PostGIS placement, permissions, triggers, constraints and RPC.
+6. Run the production Supabase security and performance advisors.
+7. Regenerate the **full** TypeScript types directly from production and update `lib/database.types.ts`.
+8. Commit the regenerated full production types.
+9. Verify existing application routes remain unaffected.
+10. Only after those checks pass, close Prompt 003A.
+
+Merging the Git branch must **not** automatically run the station snapshot importer or bulk-import the 90-record directory. The migration and the national data import are separate gates.
