@@ -1,0 +1,66 @@
+{
+  "created_at": "2026-09-22",
+  "selection_policy": "12 valid address-bearing records, approximately two per geopolitical region. North-East has only one non-placeholder address in the immutable snapshot, so the twelfth record is an additional South-West corridor/landmark address rather than sending a prohibited placeholder.",
+  "records": [
+    {
+      "region": "South-South",
+      "source_reference": "picng-7acdd2023622ddc15506e499",
+      "reason": "landmark/street address"
+    },
+    {
+      "region": "South-South",
+      "source_reference": "picng-7313d7f428cb7e41a9f21be1",
+      "reason": "highway plus landmark"
+    },
+    {
+      "region": "South-West",
+      "source_reference": "picng-380832acf4d33ef3ad1b52fd",
+      "reason": "urban street/locality"
+    },
+    {
+      "region": "South-West",
+      "source_reference": "picng-eda2c536f5b850d1fc330d40",
+      "reason": "numbered street plus landmark"
+    },
+    {
+      "region": "South-East",
+      "source_reference": "picng-bd3fa674b66d3759f5272c21",
+      "reason": "expressway/corridor"
+    },
+    {
+      "region": "South-East",
+      "source_reference": "picng-9ebf3baa95c1f566035390cb",
+      "reason": "less-structured locality"
+    },
+    {
+      "region": "North-West",
+      "source_reference": "picng-dfe3185168c181ed4e824888",
+      "reason": "plot/village/LGA address"
+    },
+    {
+      "region": "North-West",
+      "source_reference": "picng-a251565a45f39fe2dd7fec77",
+      "reason": "numbered estate/road"
+    },
+    {
+      "region": "North-Central",
+      "source_reference": "picng-37d3e778634055ab49376adb",
+      "reason": "plot/cadastral/highway"
+    },
+    {
+      "region": "North-Central",
+      "source_reference": "picng-c08f466cbb9dfd2cb6c691bf",
+      "reason": "landmark/terminal/road"
+    },
+    {
+      "region": "North-East",
+      "source_reference": "picng-bc95a10edf058f1158064010",
+      "reason": "plot/road/district"
+    },
+    {
+      "region": "South-West",
+      "source_reference": "picng-325ccdc6f2864cf556ab3bbb",
+      "reason": "highway/landmark corridor"
+    }
+  ]
+}
