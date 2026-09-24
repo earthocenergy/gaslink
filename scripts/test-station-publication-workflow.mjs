@@ -6,8 +6,8 @@ import {fileURLToPath} from "node:url";
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const read=p=>fs.readFileSync(path.join(root,p),"utf8");
-const foundation=read("supabase/migrations/20260924190100_station_publication_foundation.sql");
-const adminMigration=read("supabase/migrations/20260924193000_station_publication_admin_review.sql");
+const foundation=read("supabase/migrations/20260924192838_station_publication_foundation.sql");
+const adminMigration=read("supabase/migrations/20260924192910_station_publication_admin_review.sql");
 const adminPage=read("app/admin/page.tsx");
 const reviewPage=read("app/admin/stations/publication/page.tsx");
 const importer=read("scripts/import-station-snapshot.mjs");
