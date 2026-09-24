@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
@@ -12,6 +13,7 @@ const adminPage=read("app/admin/page.tsx");
 const reviewPage=read("app/admin/stations/publication/page.tsx");
 const importer=read("scripts/import-station-snapshot.mjs");
 const manifest=JSON.parse(read("data/enrichment/picng-publication-review-manifest-2026-09-24.json"));
+const gitBlobSha=content=>crypto.createHash("sha1").update(`blob ${Buffer.byteLength(content)}\0`).update(content).digest("hex");
 let passed=0;
 function check(label,fn){fn();passed++;console.log(`PASS ${passed}: ${label}`);}
 
@@ -45,5 +47,23 @@ check("admin publication page has no publish action",()=>{assert.equal(/>Publish
 check("pre-migration schema absence is handled without crash",()=>{assert.match(reviewPage,/Publication review schema has not been applied yet\./);assert.match(reviewPage,/schemaUnavailable/)});
 check("manifest remains 90 total 4 mapped 86 directory-only all-unreviewed",()=>{assert.deepEqual({total:manifest.summary.total,mapped:manifest.summary.mapped_candidate,directoryOnly:manifest.summary.directory_only_candidate,unreviewed:manifest.summary.unreviewed,eligible:manifest.summary.eligible,published:manifest.summary.published,withheld:manifest.summary.withheld},{total:90,mapped:4,directoryOnly:86,unreviewed:90,eligible:0,published:0,withheld:0})});
 check("no secrets or PII are added to generated review artifact",()=>{const forbidden=/email|phone|secret|token|credential|reviewer_id|user_id/i;const walk=v=>{if(Array.isArray(v))return v.forEach(walk);if(v&&typeof v==="object")for(const [k,val] of Object.entries(v)){assert.equal(forbidden.test(k),false,`forbidden artifact key: ${k}`);walk(val)}};walk(manifest)});
+
+const listStart=reviewPage.indexOf("visible.map(station=>");
+const listEnd=reviewPage.indexOf("!visible.length",listStart);
+const historyRegion=reviewPage.indexOf('role="region"',listStart);
+const reviewFunction=reviewPage.slice(reviewPage.indexOf("async function review"),reviewPage.indexOf("if(access===null"));
+check("history renders inline within each selected station card and not after the whole list",()=>{assert.ok(listStart>=0);assert.ok(historyRegion>listStart&&historyRegion<listEnd);assert.equal(reviewPage.includes("Review history —"),false)});
+check("Review history opens the selected station inline",()=>{assert.match(reviewPage,/setSelectedId\(station\.id\)/);assert.match(reviewPage,/onClick=\{\(\)=>toggleHistory\(station\)\}/)});
+check("selected Review history button becomes Hide history",()=>assert.match(reviewPage,/expanded\?"Hide history":"Review history"/));
+check("Hide history collapses the selected station",()=>assert.match(reviewPage,/if\(selectedId===station\.id\)[\s\S]*setSelectedId\(null\)/));
+check("review-history loading state exists and duplicate reads are guarded",()=>{assert.match(reviewPage,/Loading review history…/);assert.match(reviewPage,/pendingHistoryRef\.current\.has\(station\.id\)/);assert.match(reviewPage,/disabled=\{expanded&&historyLoading\}/)});
+check("inline empty history state exists",()=>assert.match(reviewPage,/No review events recorded yet\./));
+check("history errors render inline through the safe error sanitizer",()=>{assert.match(reviewPage,/safeHistoryError\(hError\)/);assert.match(reviewPage,/role="alert">Unable to load review history:/);assert.match(reviewPage,/\[redacted id\]/)});
+check("raw reviewer UUID is neither fetched nor displayed",()=>{assert.match(reviewPage,/select\("previous_status,new_status,created_at,notes"\)/);assert.equal(reviewPage.includes("reviewer_id"),false)});
+check("filter and page changes clear selected history safely",()=>assert.match(reviewPage,/\[query,statusFilter,stateFilter,mapFilter,page\][\s\S]*setSelectedId\(null\)/));
+check("history toggle remains an accessible button with expansion relationship",()=>{assert.match(reviewPage,/aria-expanded=\{expanded\}/);assert.match(reviewPage,/aria-controls=\{historyRegionId\}/);assert.match(reviewPage,/id=\{historyRegionId\} role="region"/)});
+check("publication mutation logic is unchanged",()=>{assert.match(reviewFunction,/rpc\("admin_review_station_publication",\{p_station_id:station\.id,p_decision:decision,p_notes:notes\}\)/);assert.match(reviewFunction,/await loadQueue\(\);[\s\S]*await loadHistory\(\{\.\.\.station,publication_status:decision\}\)/)});
+check("publication migrations are byte-for-byte unchanged",()=>{assert.equal(gitBlobSha(foundation),"3d751364b2634348d8c1a9b329f36ef8be0d72c5");assert.equal(gitBlobSha(adminMigration),"d5ebaa64379da1736a8a0d240f34d11c6c807005")});
+check("history UX fix introduces no direct production-data mutation",()=>{assert.equal(/from\("stations"\)\.(?:insert|update|delete)/.test(reviewPage),false);assert.equal(/from\("station_publication_reviews"\)\.(?:insert|update|delete)/.test(reviewPage),false)});
 
 console.log(`Publication workflow safety suite passed: ${passed} checks.`);
