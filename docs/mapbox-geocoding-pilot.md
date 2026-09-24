@@ -99,5 +99,14 @@ All **12** pilot records were researched. The proposed research distribution is 
 
 The derived research artifact is `data/enrichment/cngx-station-manual-verification-research-2026-09-24.json`. These classifications are **research proposals for product-lead review only** and are not production-approved verification statuses.
 
+## Product-lead manual verification decision and pilot closeout
+The product lead accepted the independent-verification pilot. Final coordinate yield is **0 exact, 4 approximate, and 8 without usable coordinates**. Of the eight without usable coordinates, **3 selected Mapbox candidates are explicitly rejected** and **5 records remain unresolved**. A rejected Mapbox candidate is a coordinate-evidence decision only; it does **not** reject the station record, alter registration/approval status, or set `is_verified`.
+
+The four approved approximate points are stored in `data/enrichment/cngx-station-manual-verification-reviewed-2026-09-24.json` and the four-record import overlay `data/enrichment/picng-refuelling-stations-location-overlay-2026-09-24.json`. Each uses `location_precision=approximate` and database-compatible `location_source_type=other`. Pi-CNG remains the station-record provenance with `record_source_type=official_directory`; Gastec is coordinate provenance only. `is_verified` remains false because coordinate verification is separate from station/operator verification.
+
+Historical pilot usage is now closed at **26 Mapbox requests total**: first free-text pilot **12 records / 14 requests**, second structured pilot **12 records / 12 requests**. The manually reviewed final outcome is **0 exact / 4 approximate / 8 without usable coordinates**.
+
+**Final strategy decision:** Mapbox Permanent Geocoding is accepted for **candidate-generation assistance** only. It is **not accepted as automatic national station-coordinate authority**. The candidate-rejection rate and weak facility-level resolution make automatic national assignment inappropriate. The remaining 78 unresolved national records must not be automatically geocoded and promoted. Future coordinates may enter CNGx through independent public-source verification, operator verification, field verification, or controlled candidate generation followed by independent verification. There is no automatic Mapbox promotion.
+
 ## Current gate
-Product-lead review of the 12-station independent-verification research is the next permitted location-quality step. National bulk geocoding remains blocked. No further Mapbox request, remaining-78 processing, Supabase write, migration, station import, or merge is authorized by this research stage.
+The geocoding pilot is ready for closeout review. No Mapbox request, billable request, Supabase write, production migration, station import, or remaining-78 geocoding is authorized by this closeout step. A merge remains separately gated.
