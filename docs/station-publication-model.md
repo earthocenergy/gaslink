@@ -2,125 +2,113 @@
 
 ## Purpose
 
-CNGx treats station existence, publication, location confidence, site/operator verification, and operational freshness as five separate concepts. A credible directory source can establish that a station record exists without establishing that CNGx has verified the facility, that it is currently operating, that its map position is exact, or that price/queue/availability data is current.
+CNGx treats directory existence, publication, location confidence, site/operator verification and operational freshness as separate concepts. A credible directory source can establish that a station record exists without establishing that CNGx verified the facility, that it is operating now, that its map position is exact, or that price/queue/availability data is current.
 
-This document defines the publication foundation only. It does not publish any of the 90 Pi-CNG directory records, change RLS, approve registrations, infer verification, or create operational facts.
+003D-2 hardens the review workflow without applying any migration, publishing any directory station, changing production RLS or running the importer.
 
-## Current architecture before publication_status
+## Public station fields versus private review history
 
-Today public visibility is coupled to `registration_status = 'approved'`:
+`public.stations` carries only publication state that may safely accompany a publicly readable station row:
 
-- `stations_public_read` allows anonymous access through the approved-registration branch; owner/admin branches are additional authenticated exceptions.
-- `nearby_stations` requires `registration_status = 'approved'` and a non-null geography.
-- the homepage station query, `/stations`, the trip planner, and the operator console explicitly filter for approved stations;
-- `/stations/[id]` relies on station RLS rather than adding its own approved filter;
-- station registration creates `pending`, non-verified rows and tells the submitter that the station will not appear publicly until approved;
-- the admin registration-review RPC currently couples approval with `is_verified = true`, claimant assignment to the submitter, and a verification timestamp;
-- claim approval can independently set `is_verified = true` and claimant ownership;
-- operator updates and moderated reports are operational-data workflows, not publication decisions.
+- `publication_status`
+- `publication_reviewed_at`
 
-003D does not silently reinterpret those existing workflows. The new publication model is deliberately separate, and the future RLS transition is deferred to a later gate.
+Internal reviewer identity and editorial notes are **not** stored on `public.stations`. Row-level security is a row boundary, not a dependable column-confidentiality boundary for a row that may later become public.
 
-## Five independent concepts
+Private review history is stored in `public.station_publication_reviews` with station id, previous status, new status, internal reviewer UUID, optional notes and timestamp. The table has RLS enabled. Anonymous access is revoked. Authenticated users receive SELECT privilege only, and the SELECT policy permits only internal admins. Direct authenticated INSERT/UPDATE/DELETE is not granted; review writes occur only through the protected admin RPC.
 
-### 1. Directory existence
+The UI does not prominently expose raw reviewer UUIDs. Review history labels the actor as **Internal admin review** unless a later approved scope adds safe human-friendly identity resolution.
 
-`record_source_type = official_directory` means the station record is supported by a directory source such as Pi-CNG. It is record provenance only. It does not mean CNGx verified, operator verified, open, currently selling CNG, accurately mapped, price confirmed, or queue confirmed.
+## Publication states
 
-### 2. Publication state
-
-`publication_status` is the explicit CNGx product/editorial decision:
+`publication_status` has four values:
 
 - `unreviewed` — publication review has not been completed;
-- `eligible` — review is complete and the record may be published, but publication has not been executed;
-- `published` — CNGx intentionally exposes the record publicly;
-- `withheld` — the record was reviewed but should not currently be public.
+- `eligible` — review is complete and the record may be considered for a later publication action;
+- `published` — the record is intentionally public;
+- `withheld` — review found that the record should not proceed toward publication at this time.
 
-Publication status is not derived from source type, coordinate precision, `is_verified`, operational status, price, or queue.
+**Eligible does not mean public.** 003D-2 has no action that can change an official-directory record to `published`.
 
-Review metadata is `publication_reviewed_at`, `publication_reviewed_by`, and `publication_notes`. Notes must contain no secrets or PII. `publication_reviewed_by` is intentionally nullable and has no foreign-key dependency in the foundation migration so future service/admin workflows are not unnecessarily coupled to an auth row.
+**Withheld does not reject or erase source provenance.** The station remains an official-directory record; withholding is only a CNGx publication-review decision.
 
-### 3. Location confidence
+Returning a record to `unreviewed` clears `publication_reviewed_at` on the station row but appends a new audit event, so earlier decisions remain in history.
 
-Location confidence remains `exact`, `approximate`, or `unconfirmed`. Coordinate provenance remains in the independent `location_source_*` fields. Publication does not upgrade coordinate confidence.
+## Existing-row backfill design
 
-### 4. Site/operator verification
+The corrected, still-unapplied foundation migration keeps:
 
-`is_verified` and future verification workflows describe independent evidence about the actual station/operator. A directory listing may be published without being CNGx verified. Publication must never set `is_verified` by implication.
+- approved non-directory rows → `publication_status='published'` to represent their legacy public state;
+- rejected non-directory rows → default `unreviewed`;
+- every `official_directory` row → `unreviewed`.
 
-### 5. Operational freshness
+It does not invent reviewer identity, notes or review time.
 
-Status, price, queue, availability/open-now and freshness timestamps require current operational evidence. A published directory listing may correctly remain `status = unknown` with price, queue and open-now null.
+## Interim official-directory registration safety
 
-## Migration and existing-row backfill
+Current public visibility still depends on `registration_status='approved'`. Until the later publication/RLS transition, official-directory rows are therefore constrained to remain `registration_status='pending'`.
 
-The publication-foundation migration is designed but intentionally unapplied in 003D-1. New records default to `publication_status = unreviewed`.
+The foundation migration adds an integrity constraint equivalent to:
 
-To preserve existing public behavior when the future publication-aware read policy is introduced:
+`record_source_type <> 'official_directory' OR registration_status = 'pending'`.
 
-- existing non-directory rows with `registration_status = approved` are backfilled to `publication_status = published`;
-- every `record_source_type = official_directory` row is backfilled to `publication_status = unreviewed`, regardless of coordinates;
-- all other existing rows remain `unreviewed`.
+The later admin-review migration also hardens `admin_review_station_registration(...)`: if the target is `official_directory`, it fails closed with **“Official-directory stations require the publication review workflow.”** It does not approve, verify, claim, timestamp verification or grant operator role for directory records. Genuine submitted non-directory registration behavior is preserved.
 
-The migration does not alter `registration_status`, `is_verified`, operational fields, RLS, functions, triggers, ownership, or station coordinates. Existing approved non-directory rows are marked published only to represent their legacy public state; no historical publication reviewer or review time is invented.
+The main Earthoc Admin **Network onboarding → Station registrations** queue filters out `official_directory`, so that queue remains a workflow for actual submitted registrations only.
 
-## registration_status versus publication_status
+## Dedicated admin publication workflow
 
-`registration_status` remains the workflow state for submission, registration, admin acceptance and operator/admin processes. It is not removed or repurposed.
+Directory publication review lives at `/admin/stations/publication`, not inside the already-large main admin queue. It is admin-gated and reads only `record_source_type='official_directory'` rows.
 
-`publication_status` is the future public-directory editorial state. Registration acceptance, station/operator verification, and publication are therefore distinct decisions even though legacy workflows currently couple some of them.
+The queue supports:
 
-## Directory publication eligibility
+- search by station/operator/address/source reference;
+- filters for publication status, state and mapped/unmapped;
+- summary counts for unreviewed, eligible, withheld, mapped and unmapped;
+- bounded pagination;
+- station identity, official-directory provenance, source reference, coordinate confidence/source, verification state and operational status;
+- per-station review history.
 
-A directory record may eventually be considered for publication when all of the following are true:
+Available decisions are only:
 
-- record provenance is valid;
-- its source reference is unique;
-- operator/name/address/state are sufficiently usable for a directory listing;
-- no known contradiction or unresolved duplicate remains;
-- an explicit CNGx product review has occurred.
+- **Mark eligible**
+- **Withhold** — a non-empty reason is required
+- **Return to unreviewed**
 
-These are eligibility conditions, not automatic approval rules. No bulk-approval or bulk-publication path is authorized by this model.
+There is no bulk status mutation and no direct publication control.
 
-Coordinates are not mandatory for a directory-only text/list/search listing.
+## Review RPC semantics
 
-## List eligibility versus map eligibility
+`admin_review_station_publication(p_station_id, p_decision, p_notes)` is `SECURITY DEFINER`, uses a fixed safe search path, requires authentication, performs an explicit admin-role check, and locks the target official-directory station before mutation.
 
-Text/list/search discovery and coordinate-dependent discovery are separate:
+It accepts only `eligible`, `withheld`, and `unreviewed`. It rejects non-directory stations and rejects any other decision, including `published`.
 
-- a published record without trusted coordinates may appear in directory/list/search discovery;
-- a record must have both latitude and longitude and `location_precision` of `approximate` or `exact` before it can be considered for coordinate-dependent map/nearby behavior;
-- `unconfirmed` records must not appear as precise map pins, nearby results, distance-sorted results, or route/trip calculations;
-- a published record with approximate coordinates may later be included in map/nearby surfaces only while clearly retaining `approximate` confidence; it must not be presented as an exact facility entrance.
+A review decision changes only `publication_status` and `publication_reviewed_at`, then appends an audit event. It preserves registration status, verification, ownership/submission fields, record provenance, coordinate provenance, latitude/longitude/geography, operational status, price, queue, availability and freshness timestamps.
 
-`review_track` in the offline review manifest is only workflow prioritization. `mapped_candidate` does not mean publish, verify, open, live, or exact.
+## Trust language
 
-## Trust display policy
+For official-directory rows the admin review UI uses evidence-specific language:
 
-For an official-directory record, future UI may display wording equivalent to **“Listed in official directory.”** It must not display **“CNGx verified”** unless the separate verification process supports that claim.
+- **Listed in official directory**
+- **Not CNGx verified** when verification is absent
+- **Operational status unknown** when operational status is unknown
+- **Approximate location** for the four currently mapped approximate records
+- **No trusted map location yet** for unconfirmed records
 
-Approximate coordinates should be identifiable as approximate where location confidence is relevant. Unknown operational status remains visibly unknown. `official_directory` must never be translated into “live”, “open”, “verified”, or “available now”.
+Directory provenance is never translated into “live”, “open”, “available now” or CNGx verification without separate evidence.
 
-## Offline publication review manifest
+## Pre-migration preview safety
 
-`scripts/build-directory-publication-review.mjs` consumes only the immutable Pi-CNG source snapshot and the independently approved coordinate overlay. It requires no database credentials and produces `data/enrichment/picng-publication-review-manifest-2026-09-24.json`.
+Production currently has no `publication_status`. The feature preview therefore detects missing publication schema and shows **“Publication review schema has not been applied yet.”** It does not crash, mutate data, fall back to registration approval or guess publication states. The main admin page continues to function because its new directory exclusion uses the already-existing `record_source_type` field.
 
-Each row contains only safe review fields: source reference, operator, address, state, record source type, coordinate-presence boolean, location precision, location source type, review track and publication status. The four approved overlay records are `mapped_candidate`; the other 86 are `directory_only_candidate`; all 90 are `unreviewed`. The manifest is a review queue, not a recommendation to publish.
+## Offline review manifest
 
-## Future RLS transition — document only
+`data/enrichment/picng-publication-review-manifest-2026-09-24.json` remains offline planning evidence only. It is not imported into the database. It remains 90 records: 4 `mapped_candidate`, 86 `directory_only_candidate`, all 90 `unreviewed`.
 
-003D-1 does not modify RLS. Today `registration_status = 'approved'` controls the anonymous-public branch of station reads.
+Once the schema is later applied, database publication state becomes authoritative only through explicit admin review actions.
 
-A later publication-schema/RLS gate should preserve current approved non-directory visibility while allowing explicitly published directory records. The intended policy shape is conceptually:
+## Future publication/RLS transition
 
-- existing approved non-directory stations remain public; or
-- a station with `publication_status = published` may be public;
-- an `official_directory` station must specifically be `publication_status = published` before anonymous visibility.
+003D-2 still does not alter public-read RLS or `nearby_stations`. A later explicit gate must decide how `publication_status='published'` integrates with anonymous station reads while preserving current approved non-directory behavior and coordinate-dependent discovery safety.
 
-The exact policy and `nearby_stations` implementation must be reviewed in that later gate, not introduced here.
-
-## Admin review requirements
-
-A future admin publication workflow should show provenance, uniqueness/reconciliation state, usable identity/address information, coordinate confidence and coordinate provenance, verification state, and operational freshness as separate evidence. Review actions should explicitly move publication state and record reviewer/time/notes without silently mutating station verification or operational data.
-
-No action should bulk-approve or bulk-publish all imported directory records. Publication must remain an explicit reviewed decision per controlled workflow.
+No bulk publication is authorized by this model. The `published` state exists now only for legacy approved non-directory backfill and a future explicitly approved publication gate.

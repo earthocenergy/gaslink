@@ -5,10 +5,11 @@
   "scripts":{
     "dev":"next dev",
     "build:publication-manifest":"node scripts/build-directory-publication-review.mjs",
+    "test:publication-workflow":"node scripts/test-station-publication-workflow.mjs",
     "test:publication-manifest":"node scripts/test-directory-publication-review.mjs",
     "test:directory-import":"node scripts/test-import-station-snapshot.mjs",
     "validate:directory-import":"node scripts/import-station-snapshot.mjs data/sources/picng-refuelling-stations-2026-09-21.json --overlay data/enrichment/picng-refuelling-stations-location-overlay-2026-09-24.json --validate-only",
-    "prebuild":"npm run test:publication-manifest && npm run test:directory-import && npm run validate:directory-import",
+    "prebuild":"npm run test:publication-workflow && npm run test:publication-manifest && npm run test:directory-import && npm run validate:directory-import",
     "build":"next build",
     "start":"next start"
   },
