@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect,useMemo,useState} from "react";
+import {useEffect,useMemo,useRef,useState} from "react";
 import Link from "next/link";
 import BackButton from "@/components/BackButton";
 import {createClient} from "@/lib/supabase/client";
@@ -22,6 +22,14 @@ function schemaUnavailable(error:any){
   const message=String(error?.message||"").toLowerCase();
   return error?.code==="42703"||error?.code==="PGRST204"||message.includes("publication_status")||message.includes("schema cache");
 }
+function safeHistoryError(error:any){
+  return String(error?.message||"Unable to load review history.")
+    .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/gi,"[redacted id]")
+    .replace(/\beyJ[A-Za-z0-9._-]+/g,"[redacted token]")
+    .replace(/\bsb_(?:secret|publishable)_[A-Za-z0-9._-]+/gi,"[redacted credential]")
+    .slice(0,300);
+}
+function safeDomId(value:string){return value.replace(/[^A-Za-z0-9_-]/g,"-").replace(/-+/g,"-");}
 
 export default function PublicationReviewPage(){
   const [access,setAccess]=useState<boolean|null>(null);
@@ -34,9 +42,12 @@ export default function PublicationReviewPage(){
   const [page,setPage]=useState(1);
   const [message,setMessage]=useState("");
   const [error,setError]=useState("");
-  const [selected,setSelected]=useState<StationRow|null>(null);
+  const [selectedId,setSelectedId]=useState<string|null>(null);
   const [history,setHistory]=useState<ReviewRow[]>([]);
   const [historyError,setHistoryError]=useState("");
+  const [historyLoading,setHistoryLoading]=useState(false);
+  const historyRequestRef=useRef(0);
+  const pendingHistoryRef=useRef(new Set<string>());
 
   async function loadQueue(){
     const db=createClient();
@@ -60,6 +71,13 @@ export default function PublicationReviewPage(){
 
   useEffect(()=>{void initialize()},[]);
   useEffect(()=>{setPage(1)},[query,statusFilter,stateFilter,mapFilter]);
+  useEffect(()=>{
+    historyRequestRef.current+=1;
+    setSelectedId(null);
+    setHistory([]);
+    setHistoryError("");
+    setHistoryLoading(false);
+  },[query,statusFilter,stateFilter,mapFilter,page]);
 
   const states=useMemo(()=>Array.from(new Set(rows.map(x=>x.state).filter(Boolean) as string[])).sort(),[rows]);
   const summary=useMemo(()=>({
@@ -84,10 +102,31 @@ export default function PublicationReviewPage(){
   const visible=filtered.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE);
 
   async function loadHistory(station:StationRow){
-    setSelected(station);setHistory([]);setHistoryError("");
+    if(pendingHistoryRef.current.has(station.id))return;
+    pendingHistoryRef.current.add(station.id);
+    const requestId=++historyRequestRef.current;
+    setSelectedId(station.id);
+    setHistory([]);
+    setHistoryError("");
+    setHistoryLoading(true);
     const {data,error:hError}=await createClient().from("station_publication_reviews").select("previous_status,new_status,created_at,notes").eq("station_id",station.id).order("created_at",{ascending:false});
-    if(hError){setHistoryError(hError.message);return;}
+    pendingHistoryRef.current.delete(station.id);
+    if(requestId!==historyRequestRef.current)return;
+    if(hError){setHistoryError(safeHistoryError(hError));setHistoryLoading(false);return;}
     setHistory((data||[]) as ReviewRow[]);
+    setHistoryLoading(false);
+  }
+
+  function toggleHistory(station:StationRow){
+    if(selectedId===station.id){
+      historyRequestRef.current+=1;
+      setSelectedId(null);
+      setHistory([]);
+      setHistoryError("");
+      setHistoryLoading(false);
+      return;
+    }
+    void loadHistory(station);
   }
 
   async function review(station:StationRow,decision:ReviewDecision){
@@ -134,6 +173,8 @@ export default function PublicationReviewPage(){
       <p className="muted">Showing {visible.length} of {filtered.length} matching records · page {page} of {pages}</p>
       <div className="adminList">{visible.map(station=>{
         const mapped=isMapped(station);
+        const expanded=selectedId===station.id;
+        const historyRegionId=`review-history-${safeDomId(station.record_source_reference||station.name)}`;
         return <div key={station.id}>
           <b>{station.name}</b>
           <span>{station.operator_name||"Operator not stated"} · {station.address}{station.city?`, ${station.city}`:""}{station.state?`, ${station.state}`:""}</span>
@@ -141,13 +182,17 @@ export default function PublicationReviewPage(){
           <p>{station.is_verified?"CNGx verification recorded":"Not CNGx verified"} · {station.status==="unknown"?"Operational status unknown":`Operational status: ${station.status}`}</p>
           <p><MapPin size={14} style={{verticalAlign:"middle"}}/> {mapped?(station.location_precision==="approximate"?"Approximate location":`Location precision: ${station.location_precision}`):"No trusted map location yet"}{mapped&&station.location_source_name?` · ${station.location_source_name}`:""}</p>
           <p>Publication review: <b>{station.publication_status}</b></p>
-          <p><button className="primary" onClick={()=>review(station,"eligible")}>Mark eligible</button> <button className="secondary" onClick={()=>review(station,"withheld")}>Withhold</button> <button className="secondary" onClick={()=>review(station,"unreviewed")}>Return to unreviewed</button> <button className="secondary" onClick={()=>loadHistory(station)}>Review history</button></p>
+          <p><button className="primary" onClick={()=>review(station,"eligible")}>Mark eligible</button> <button className="secondary" onClick={()=>review(station,"withheld")}>Withhold</button> <button className="secondary" onClick={()=>review(station,"unreviewed")}>Return to unreviewed</button> <button className="secondary" aria-expanded={expanded} aria-controls={historyRegionId} disabled={expanded&&historyLoading} onClick={()=>toggleHistory(station)}>{expanded?"Hide history":"Review history"}</button></p>
+          {expanded&&<section id={historyRegionId} role="region" aria-label={`Review history for ${station.name}`} aria-live="polite" className="panel" style={{marginTop:12}}>
+            {historyLoading&&<p className="muted">Loading review history…</p>}
+            {!historyLoading&&historyError&&<p role="alert">Unable to load review history: {historyError}</p>}
+            {!historyLoading&&!historyError&&history.length>0&&history.map((item,index)=><div key={`${item.created_at}-${index}`} style={{padding:"10px 0",borderBottom:"1px solid rgba(127,127,127,.2)"}}><b>{item.previous_status} → {item.new_status}</b><span style={{display:"block"}}>{new Date(item.created_at).toLocaleString()} · Internal admin review</span>{item.notes&&<p>{item.notes}</p>}</div>)}
+            {!historyLoading&&!historyError&&!history.length&&<p className="muted">No review events recorded yet.</p>}
+          </section>}
         </div>;
       })}</div>
       {!visible.length&&<p className="muted">No directory records match these filters.</p>}
       <div style={{display:"flex",gap:10,justifyContent:"space-between",alignItems:"center",marginTop:16}}><button className="secondary" disabled={page<=1} onClick={()=>setPage(p=>Math.max(1,p-1))}>Previous</button><span>Page {page} / {pages}</span><button className="secondary" disabled={page>=pages} onClick={()=>setPage(p=>Math.min(pages,p+1))}>Next</button></div>
-
-      {selected&&<section className="panel" style={{marginTop:24}}><h2>Review history — {selected.name}</h2><p className="muted">{selected.record_source_reference||"No source reference"}</p>{historyError&&<p>{historyError}</p>}{history.length?history.map((item,index)=><div key={`${item.created_at}-${index}`} style={{padding:"10px 0",borderBottom:"1px solid rgba(127,127,127,.2)"}}><b>{item.previous_status} → {item.new_status}</b><span style={{display:"block"}}>{new Date(item.created_at).toLocaleString()} · Internal admin review</span>{item.notes&&<p>{item.notes}</p>}</div>):!historyError&&<p className="muted">No review events recorded yet.</p>}</section>}
     </section>}
   </main>;
 }
