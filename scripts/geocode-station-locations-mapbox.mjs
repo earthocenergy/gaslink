@@ -1,146 +1,28 @@
 #!/usr/bin/env node
-/**
- * CNGx Mapbox Permanent Geocoding pilot.
- * Offline by default. External calls require BOTH --pilot and --execute.
- * Never reads or writes Supabase and never accepts NEXT_PUBLIC_* tokens.
- */
 import fs from "node:fs/promises";
 import path from "node:path";
 
-export const MAX_REQUESTS = 24;
-export const clean = value => String(value ?? "").replace(/\s+/g, " ").trim();
-
-export function contextValue(feature, type) {
-  const context = feature?.properties?.context;
-  if (context && !Array.isArray(context) && typeof context === "object") {
-    const item = context[type];
-    return item?.name ?? item?.text ?? item?.short_code ?? null;
-  }
-  if (Array.isArray(context)) {
-    const item = context.find(x => String(x?.id ?? "").startsWith(type) || String(x?.mapbox_id ?? "").includes(type));
-    return item?.name ?? item?.text ?? null;
-  }
-  return null;
-}
-
-const normalizedState = value => clean(value).replace(/^fct\s+/i, "").replace(/\s+state$/i, "").toLowerCase();
-export function stateMatches(feature, expectedState) {
-  const region = contextValue(feature, "region");
-  if (!region) return false;
-  const actual = normalizedState(region);
-  const expected = normalizedState(expectedState);
-  return actual === expected || actual.includes(expected) || expected.includes(actual);
-}
-
-function componentContradiction(feature) {
-  const match = feature?.properties?.match_code;
-  if (!match || typeof match !== "object") return false;
-  if (match.region === "unmatched") return true;
-  return ["address","street","place","locality","district"].some(k => match[k] === "unmatched");
-}
-
-export function compactCandidate(feature) {
-  if (!feature) return null;
-  const p = feature.properties ?? {};
-  const coords = p.coordinates ?? {};
-  return {
-    mapbox_id:p.mapbox_id ?? feature.id ?? null,
-    feature_type:p.feature_type ?? feature.place_type?.[0] ?? null,
-    candidate_latitude:coords.latitude ?? feature.geometry?.coordinates?.[1] ?? null,
-    candidate_longitude:coords.longitude ?? feature.geometry?.coordinates?.[0] ?? null,
-    coordinates_accuracy:coords.accuracy ?? null,
-    returned_name:p.name ?? feature.text ?? null,
-    returned_full_address:p.full_address ?? feature.place_name ?? null,
-    returned_place:contextValue(feature,"place"),
-    returned_district:contextValue(feature,"district"),
-    returned_locality:contextValue(feature,"locality"),
-    returned_region:contextValue(feature,"region"),
-    returned_country:contextValue(feature,"country"),
-    match_code:p.match_code ?? null,
-    match_confidence:p.match_code?.confidence ?? null
-  };
-}
-
-export function classify(feature, expectedState) {
-  if (!feature) return { decision:"unresolved", note:"No useful permanent result." };
-  const p = feature.properties ?? {};
-  const featureType = p.feature_type ?? feature.place_type?.[0] ?? null;
-  const confidence = p.match_code?.confidence ?? null;
-  const accuracy = p.coordinates?.accuracy ?? null;
-  const region = contextValue(feature,"region");
-  const broad = ["region","place","district","locality"].includes(featureType);
-  if (region && !stateMatches(feature, expectedState)) return {decision:"rejected",note:"Returned region/state contradicts source."};
-  if (broad) return {decision:"unresolved",note:"Result is broad place/state/locality level."};
-  const exactGate = featureType === "address" && Boolean(region) && stateMatches(feature, expectedState)
-    && ["exact","high"].includes(confidence) && ["rooftop","parcel","point"].includes(accuracy)
-    && !componentContradiction(feature);
-  if (exactGate) return {decision:"candidate_exact",note:"Address-level candidate meets automated exact gate; product-lead review still required."};
-  if (featureType === "address" || ["street","secondary_address"].includes(featureType)) {
-    return {decision:"candidate_approximate",note:!region ? "Address/street candidate lacks positive region evidence; cannot be exact." : "Plausible address/street candidate without facility-level exact gate."};
-  }
-  return {decision:"manual_review",note:"Potentially useful result requires human review."};
-}
-
-function localityEvidence(feature) {
-  return [contextValue(feature,"place"),contextValue(feature,"district"),contextValue(feature,"locality")].filter(Boolean).map(clean);
-}
-function sourceTokens(record) {
-  return clean(record.address).toLowerCase().split(/[^a-z0-9]+/).filter(x=>x.length>3);
-}
-function plausibility(feature, record) {
-  const c=classify(feature,record.state);
-  if (c.decision==="rejected"||c.decision==="unresolved") return 0;
-  const text=[feature?.properties?.full_address,feature?.place_name,...localityEvidence(feature)].filter(Boolean).join(" ").toLowerCase();
-  const hits=sourceTokens(record).filter(t=>text.includes(t)).length;
-  return (stateMatches(feature,record.state)?4:0)+(c.decision==="candidate_exact"?4:c.decision==="candidate_approximate"?2:1)+Math.min(hits,3);
-}
-export function selectCandidate(features, record) {
-  const ranked=(features??[]).map((feature,index)=>({feature,index,score:plausibility(feature,record)})).sort((a,b)=>b.score-a.score);
-  if (!ranked.length || ranked[0].score===0) return {primary:null,classification:{decision:"unresolved",note:"No useful permanent result."},ambiguous:false};
-  const top=ranked[0], second=ranked[1];
-  const ambiguous=Boolean(second && second.score>0 && top.score-second.score<=1);
-  if (ambiguous) return {primary:top.feature,classification:{decision:"manual_review",note:"Two or more provider candidates remain materially plausible; manual review required."},ambiguous:true};
-  return {primary:top.feature,classification:classify(top.feature,record.state),ambiguous:false};
-}
-
-export function queryFor(record, variant=1) {
-  const address=clean(record.address);
-  const state=clean(record.state);
-  if (variant===1) return `${address}, ${state}`;
-  const normalized=address.replace(/\s*,\s*/g,", ").replace(/\bRd\b/gi,"Road").replace(/\bSt\b/gi,"Street").replace(/\bOpposite\b/gi,"Opp.").replace(/\s+/g," ");
-  return `${normalized}, ${state}`;
-}
-
-async function main() {
-  const args=new Set(process.argv.slice(2));
-  const pilot=args.has("--pilot"), execute=args.has("--execute");
-  const token=process.env.MAPBOX_ACCESS_TOKEN;
-  const inputPath=path.resolve("data/enrichment/picng-stations-requiring-geocoding-2026-09-22.json");
-  const outputPath=path.resolve("data/enrichment/mapbox-permanent-geocoding-pilot-2026-09-22.json");
-  const observedAt=new Date().toISOString();
-  const selected=["picng-7acdd2023622ddc15506e499","picng-7313d7f428cb7e41a9f21be1","picng-380832acf4d33ef3ad1b52fd","picng-eda2c536f5b850d1fc330d40","picng-bd3fa674b66d3759f5272c21","picng-9ebf3baa95c1f566035390cb","picng-dfe3185168c181ed4e824888","picng-a251565a45f39fe2dd7fec77","picng-37d3e778634055ab49376adb","picng-c08f466cbb9dfd2cb6c691bf","picng-bc95a10edf058f1158064010","picng-325ccdc6f2864cf556ab3bbb"];
-  const source=JSON.parse(await fs.readFile(inputPath,"utf8")); const byRef=new Map(source.records.map(r=>[r.source_reference,r]));
-  const sample=selected.map(ref=>{const r=byRef.get(ref);if(!r)throw new Error(`Missing pilot source_reference: ${ref}`);if(/^address pending confirmation$/i.test(clean(r.address)))throw new Error(`Placeholder address prohibited: ${ref}`);return r;});
-  if(!pilot||!execute){console.log(JSON.stringify({mode:"dry_run",external_requests:0,sample_count:sample.length,max_requests:MAX_REQUESTS,execute_requires:["--pilot","--execute","MAPBOX_ACCESS_TOKEN"]},null,2));return;}
-  if(!token)throw new Error("MAPBOX_ACCESS_TOKEN is required for external pilot execution.");
-  if(process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN)throw new Error("Refusing execution while NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN is present; use server-only MAPBOX_ACCESS_TOKEN.");
-  let requestCount=0; const results=[];
-  async function geocode(record,variant){
-    if(++requestCount>MAX_REQUESTS)throw new Error("Hard request ceiling exceeded.");
-    const query=queryFor(record,variant); const url=new URL("https://api.mapbox.com/search/geocode/v6/forward");
-    for(const [k,v] of [["q",query],["country","NG"],["autocomplete","false"],["permanent","true"],["limit","5"],["access_token",token]])url.searchParams.set(k,v);
-    const response=await fetch(url);if(!response.ok)throw new Error(`Mapbox request failed (${response.status})`);
-    const payload=await response.json();return {query,features:payload.features??[]};
-  }
-  for(const record of sample){
-    let variant=1,attempt=await geocode(record,1),selection=selectCandidate(attempt.features,record);
-    if((!selection.primary||["rejected","unresolved"].includes(selection.classification.decision))&&requestCount<MAX_REQUESTS){
-      variant=2;attempt=await geocode(record,2);selection=selectCandidate(attempt.features,record);
-    }
-    const primary=compactCandidate(selection.primary);
-    results.push({source_reference:record.source_reference,operator:record.operator,source_address:record.address,state:record.state,query_used:attempt.query,query_variant_number:variant,provider:"mapbox",provider_product:"geocoding_v6",storage_mode:"permanent",permanent:true,...(primary??{}),provider_candidates:attempt.features.slice(0,5).map(compactCandidate),observed_at:observedAt,candidate_decision:selection.classification.decision,review_notes:selection.classification.note});
-  }
-  await fs.writeFile(outputPath,JSON.stringify({observed_at:observedAt,permanent:true,total_requests:requestCount,records:results},null,2)+"\n");
-  console.log(JSON.stringify({mode:"executed_permanent_pilot",requests:requestCount,records:results.length,output:outputPath},null,2));
-}
-if (process.argv[1] && import.meta.url === new URL(`file://${path.resolve(process.argv[1])}`).href) main().catch(e=>{console.error(e.message);process.exitCode=1;});
+export const MAX_REQUESTS=24;
+export const clean=v=>String(v??"").replace(/\s+/g," ").trim();
+const norm=v=>clean(v).toLowerCase().replace(/[–—-]/g," ").replace(/[^a-z0-9]+/g," ").trim();
+const FCT=new Set(["fct abuja","abuja fct","federal capital territory","federal capital territory abuja","fct","abuja"]);
+export const normalizedState=v=>FCT.has(norm(v))?"federal capital territory":norm(v).replace(/ state$/,"");
+export function contextValue(feature,type){const c=feature?.properties?.context;if(c&&!Array.isArray(c)&&typeof c==="object"){const x=c[type];return x?.name??x?.text??x?.short_code??null}if(Array.isArray(c)){const x=c.find(y=>String(y?.id??"").startsWith(type)||String(y?.mapbox_id??"").includes(type));return x?.name??x?.text??null}return null}
+export function stateMatches(feature,state){const r=contextValue(feature,"region");return Boolean(r)&&normalizedState(r)===normalizedState(state)}
+const localityValues=f=>["place","locality","district","neighborhood"].map(k=>contextValue(f,k)).filter(Boolean);
+export function localityMatches(feature,hints=[]){if(!hints.length)return true;const got=localityValues(feature).map(norm);return hints.some(h=>got.includes(norm(h)))}
+const criticalMismatch=f=>{const m=f?.properties?.match_code;if(!m||typeof m!=="object")return false;return ["region","address","street","place","locality","district"].some(k=>m[k]==="unmatched")};
+export function compactCandidate(f){if(!f)return null;const p=f.properties??{},c=p.coordinates??{};return{mapbox_id:p.mapbox_id??f.id??null,feature_type:p.feature_type??f.place_type?.[0]??null,candidate_latitude:c.latitude??f.geometry?.coordinates?.[1]??null,candidate_longitude:c.longitude??f.geometry?.coordinates?.[0]??null,coordinates_accuracy:c.accuracy??null,returned_name:p.name??f.text??null,returned_full_address:p.full_address??f.place_name??null,returned_place:contextValue(f,"place"),returned_district:contextValue(f,"district"),returned_locality:contextValue(f,"locality"),returned_neighborhood:contextValue(f,"neighborhood"),returned_region:contextValue(f,"region"),returned_country:contextValue(f,"country"),match_code:p.match_code??null,match_confidence:p.match_code?.confidence??null}}
+export function classify(feature,record,hints=[]){if(!feature)return{decision:"unresolved",note:"No useful permanent result."};const p=feature.properties??{},type=p.feature_type??feature.place_type?.[0]??null,conf=p.match_code?.confidence??null,acc=p.coordinates?.accuracy??null,region=contextValue(feature,"region");if(region&&!stateMatches(feature,record.state))return{decision:"rejected",note:"Returned region/state contradicts source."};if(!region)return{decision:"manual_review",note:"Returned region is absent; automated acceptance fails closed."};const locRequired=hints.length>0,locOk=localityMatches(feature,hints);if(locRequired&&!locOk)return{decision:"manual_review",note:"Source has explicit locality requirements but provider locality context is absent or inconsistent."};if(["region","place","district","locality","neighborhood"].includes(type))return{decision:"unresolved",note:"Result is broad administrative/locality level."};if(type==="address"&&stateMatches(feature,record.state)&&(!locRequired||locOk)&&["exact","high"].includes(conf)&&["rooftop","parcel","point"].includes(acc)&&!criticalMismatch(feature))return{decision:"candidate_exact",note:"Address-level candidate meets strict state/locality/match/accuracy gates; product-lead review still required."};if(type==="address"||["street","secondary_address"].includes(type)){if(locRequired&&!locOk)return{decision:"manual_review",note:"Locality evidence fails closed."};return{decision:"candidate_approximate",note:"State/locality-compatible address or street evidence without facility-level exact gate."}}return{decision:"manual_review",note:"Potentially useful result requires human review."}}
+const streetIdentity=f=>norm(f?.properties?.name??f?.text??"").replace(/\b(rd|road|st|street|ave|avenue|expressway|way)\b/g,"").trim();
+const hav=(a,b)=>{const R=6371000,toRad=x=>x*Math.PI/180,dLat=toRad(b[1]-a[1]),dLon=toRad(b[0]-a[0]),x=Math.sin(dLat/2)**2+Math.cos(toRad(a[1]))*Math.cos(toRad(b[1]))*Math.sin(dLon/2)**2;return 2*R*Math.asin(Math.sqrt(x))};
+export function sameLocationCluster(a,b,record,hints=[]){const ca=compactCandidate(a),cb=compactCandidate(b);if(!ca||!cb||!stateMatches(a,record.state)||!stateMatches(b,record.state)||!localityMatches(a,hints)||!localityMatches(b,hints))return false;if(!streetIdentity(a)||streetIdentity(a)!==streetIdentity(b))return false;return hav([ca.candidate_longitude,ca.candidate_latitude],[cb.candidate_longitude,cb.candidate_latitude])<=100}
+const tokenHits=(f,record)=>{const text=norm([f?.properties?.full_address,f?.place_name,...localityValues(f)].filter(Boolean).join(" "));return norm(record.address).split(" ").filter(x=>x.length>3&&text.includes(x)).length};
+export function selectCandidate(features,record,hints=[]){const usable=(features??[]).map((feature,index)=>({feature,index,c:classify(feature,record,hints)})).filter(x=>!["rejected","unresolved"].includes(x.c.decision));if(!usable.length)return{primary:null,classification:{decision:"unresolved",note:"No useful state/locality-compatible permanent result."},ambiguous:false};const ranked=usable.map(x=>({...x,score:(x.c.decision==="candidate_exact"?6:x.c.decision==="candidate_approximate"?3:1)+Math.min(tokenHits(x.feature,record),3)})).sort((a,b)=>b.score-a.score);const top=ranked[0],plausible=ranked.filter(x=>top.score-x.score<=1);const material=plausible.filter((x,i)=>i===0||!sameLocationCluster(top.feature,x.feature,record,hints));if(material.length>1)return{primary:top.feature,classification:{decision:"manual_review",note:"Two or more materially plausible provider location clusters remain; manual review required."},ambiguous:true};return{primary:top.feature,classification:top.c,ambiguous:false}}
+const geoTokens=s=>norm(s).split(" ");
+export function dedupeGeographicTokens(address,state){const a=clean(address).replace(/\s*,\s*/g,", ");const ns=normalizedState(state);const parts=a.split(",").map(clean).filter(Boolean);const out=[];for(const p of parts){const np=normalizedState(p);if(np===ns&&out.some(x=>normalizedState(x)===ns))continue;out.push(p)}return out.join(", ")}
+export function freeTextQuery(record){const base=dedupeGeographicTokens(record.address,record.state);return normalizedState(base).endsWith(normalizedState(record.state))||base.split(",").some(p=>normalizedState(p)===normalizedState(record.state))?base:`${base}, ${clean(record.state)}`}
+export function structuredInput(record,hints=[]){const address=clean(record.address),place=hints[0]??null;let address_number=null,street=null,address_line1=null;const numbered=address.match(/^\s*(Plot\s+[^,]+|C?\d+[A-Za-z-]*)\s*,?\s*(.*?)(?:,|$)/i);if(numbered&&/^(?:\d|C\d)/i.test(numbered[1])){address_number=numbered[1];street=clean(numbered[2])||null}else{const first=clean(address.split(",")[0]);if(first&&!/\b(plaza|station|terminal|village|estate|junction|hotel)\b/i.test(first))address_line1=first}const params={country:"NG",region:clean(record.state),place,autocomplete:"false",permanent:"true",limit:"5"};if(address_number&&street){params.address_number=address_number;params.street=street}else if(address_line1)params.address_line1=address_line1;else return null;return params}
+export function buildRequest(record,hints=[],token="TOKEN"){const structured=structuredInput(record,hints),url=new URL("https://api.mapbox.com/search/geocode/v6/forward");if(structured){for(const[k,v]of Object.entries(structured))if(v)url.searchParams.set(k,v);url.searchParams.set("access_token",token);return{mode:"structured",url}}for(const[k,v]of Object.entries({q:freeTextQuery(record),country:"NG",autocomplete:"false",permanent:"true",limit:"5",access_token:token}))url.searchParams.set(k,v);return{mode:"free_text",url}}
+async function main(){const args=new Set(process.argv.slice(2)),pilot=args.has("--pilot"),execute=args.has("--execute"),token=process.env.MAPBOX_ACCESS_TOKEN,input=path.resolve("data/enrichment/picng-stations-requiring-geocoding-2026-09-22.json"),hintsPath=path.resolve("data/enrichment/mapbox-permanent-geocoding-pilot-locality-hints-2026-09-24.json"),output=path.resolve("data/enrichment/mapbox-structured-geocoding-pilot-2026-09-24.json");const refs=["picng-7acdd2023622ddc15506e499","picng-7313d7f428cb7e41a9f21be1","picng-380832acf4d33ef3ad1b52fd","picng-eda2c536f5b850d1fc330d40","picng-bd3fa674b66d3759f5272c21","picng-9ebf3baa95c1f566035390cb","picng-dfe3185168c181ed4e824888","picng-a251565a45f39fe2dd7fec77","picng-37d3e778634055ab49376adb","picng-c08f466cbb9dfd2cb6c691bf","picng-bc95a10edf058f1158064010","picng-325ccdc6f2864cf556ab3bbb"],src=JSON.parse(await fs.readFile(input,"utf8")),cfg=JSON.parse(await fs.readFile(hintsPath,"utf8")),byRef=new Map(src.records.map(r=>[r.source_reference,r])),byHint=new Map(cfg.records.map(r=>[r.source_reference,[...(r.place_hints??[]),...(r.neighborhood_hints??[])]])),sample=refs.map(ref=>byRef.get(ref));if(!pilot||!execute){console.log(JSON.stringify({mode:"dry_run",external_requests:0,sample_count:12,max_requests:MAX_REQUESTS,output:path.basename(output),execute_requires:["--pilot","--execute","MAPBOX_ACCESS_TOKEN"]},null,2));return}if(!token)throw new Error("MAPBOX_ACCESS_TOKEN is required.");if(process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN)throw new Error("Refusing execution while NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN is present.");let count=0;const results=[];for(const record of sample){if(++count>MAX_REQUESTS)throw new Error("Hard request ceiling exceeded.");const hints=byHint.get(record.source_reference)??[],req=buildRequest(record,hints,token),res=await fetch(req.url);if(!res.ok)throw new Error(`Mapbox request failed (${res.status})`);const payload=await res.json(),features=payload.features??[],sel=selectCandidate(features,record,hints);results.push({source_reference:record.source_reference,operator:record.operator,source_address:record.address,state:record.state,locality_hints:hints,request_mode:req.mode,provider:"mapbox",provider_product:"geocoding_v6",storage_mode:"permanent",permanent:true,...(compactCandidate(sel.primary)??{}),provider_candidates:features.slice(0,5).map(compactCandidate),candidate_decision:sel.classification.decision,review_notes:sel.classification.note})}await fs.writeFile(output,JSON.stringify({observed_at:new Date().toISOString(),permanent:true,total_requests:count,records:results},null,2)+"\n");console.log(JSON.stringify({mode:"executed_structured_permanent_pilot",requests:count,records:results.length,output:path.basename(output)},null,2))}
+if(process.argv[1]&&import.meta.url===new URL(`file://${path.resolve(process.argv[1])}`).href)main().catch(e=>{console.error(e.message);process.exitCode=1});
