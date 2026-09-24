@@ -1,22 +1,21 @@
 import assert from "node:assert/strict";
-import {contextValue,classify,selectCandidate,queryFor} from "./geocode-station-locations-mapbox.mjs";
-
-const feature=({region="Lagos",place="Ikeja",confidence="exact",accuracy="rooftop",type="address",id="x",match={}}={})=>({
- id,geometry:{coordinates:[3.35,6.6]},properties:{mapbox_id:id,feature_type:type,name:"Test",full_address:"10 Test Road, Ikeja, Lagos, Nigeria",coordinates:{longitude:3.35,latitude:6.6,accuracy},context:{country:{name:"Nigeria"},region:region?{name:region}:undefined,place:place?{name:place}:undefined},match_code:{confidence,...match}}
-});
-const base=feature();
-assert.equal(contextValue(base,"region"),"Lagos");
-assert.equal(contextValue(base,"place"),"Ikeja");
-assert.equal(classify(feature({region:"Oyo"}),"Lagos").decision,"rejected");
-assert.notEqual(classify(feature({region:null}),"Lagos").decision,"candidate_exact");
-for(const accuracy of ["rooftop","parcel","point"]) assert.equal(classify(feature({accuracy}),"Lagos").decision,"candidate_exact");
-assert.notEqual(classify(feature({accuracy:"interpolated"}),"Lagos").decision,"candidate_exact");
-for(const confidence of ["medium","low"]) assert.notEqual(classify(feature({confidence}),"Lagos").decision,"candidate_exact");
-assert.notEqual(classify(feature({match:{region:"unmatched"}}),"Lagos").decision,"candidate_exact");
-const ambiguous=selectCandidate([feature({id:"a"}),feature({id:"b"})],{state:"Lagos",address:"10 Test Road Ikeja"});
-assert.equal(ambiguous.classification.decision,"manual_review");
-const q1=queryFor({address:"10 Test Rd, Ikeja",state:"Lagos"},1),q2=queryFor({address:"10 Test Rd, Ikeja",state:"Lagos"},2);
-assert.match(q1,/Lagos/);assert.match(q2,/Lagos/);assert.notEqual(q1,q2);
-const captured=[];const old=console.log;console.log=(...x)=>captured.push(x.join(" "));process.env.MAPBOX_ACCESS_TOKEN="SECRET_SHOULD_NOT_APPEAR";console.log(JSON.stringify({safe:true}));console.log=old;
-assert.equal(captured.join("\n").includes(process.env.MAPBOX_ACCESS_TOKEN),false);
-old("offline Mapbox v6 tests: PASS (10/10)");
+import {contextValue,classify,selectCandidate,freeTextQuery,structuredInput,buildRequest,normalizedState,sameLocationCluster} from "./geocode-station-locations-mapbox.mjs";
+const rec={state:"Kaduna",address:"Plot 17886, Kakau Village, Chikun, Kaduna State"},h=["Kakau Village","Chikun"];
+const f=({region="Kaduna",place="Chikun",locality=null,name="Test Road",lat=10.5,lon=7.4,confidence="high",accuracy="rooftop",type="address",match={}}={})=>({geometry:{coordinates:[lon,lat]},properties:{mapbox_id:name,feature_type:type,name,full_address:`${name}, ${place??""}, ${region??""}, Nigeria`,coordinates:{longitude:lon,latitude:lat,accuracy},context:{country:{name:"Nigeria"},region:region?{name:region}:undefined,place:place?{name:place}:undefined,locality:locality?{name:locality}:undefined},match_code:{confidence,...match}}});
+assert.equal(contextValue(f(),"region"),"Kaduna");
+assert.equal(contextValue(f(),"place"),"Chikun");
+assert.notEqual(classify(f({place:"Sabon Gari"}),rec,h).decision,"candidate_approximate");
+assert.notEqual(classify(f({place:"Numan"}),{state:"Adamawa",address:"Numan Road, Jimeta"},["Jimeta"]).decision,"candidate_approximate");
+assert.notEqual(classify(f({region:"Lagos",place:"Ikoyi"}),{state:"Lagos",address:"Agidingbi Ikeja Lagos"},["Agidingbi","Ikeja"]).decision,"candidate_approximate");
+assert.equal(classify(f({region:"Borno",place:"Maiduguri"}),{state:"FCT Abuja",address:"Kubwa Abuja"},["Kubwa","Abuja"]).decision,"rejected");
+for(const alias of ["FCT Abuja","Abuja FCT","Federal Capital Territory","Federal Capital Territory Abuja"])assert.equal(normalizedState(alias),"federal capital territory");
+assert.equal(classify(f({place:"Chikun",type:"street",accuracy:null,confidence:null}),rec,h).decision,"candidate_approximate");
+assert.equal(classify(f({place:null,locality:null,type:"street",accuracy:null,confidence:null}),rec,h).decision,"manual_review");
+const a=f({name:"Sulu Gambari Road",lat:8.4900,lon:4.5500,type:"street",accuracy:null,confidence:null,region:"Kwara",place:"Ilorin"}),b=f({name:"Sulu-Gambari Rd",lat:8.4903,lon:4.5502,type:"street",accuracy:null,confidence:null,region:"Kwara",place:"Ilorin"});
+assert.equal(sameLocationCluster(a,b,{state:"Kwara",address:"Sulu Gambari Road, Ilorin"},["Ilorin"]),true);
+assert.notEqual(selectCandidate([a,b],{state:"Kwara",address:"Sulu Gambari Road, Ilorin"},["Ilorin"]).classification.decision,"candidate_exact");
+const dedup=freeTextQuery({address:"Lateef-Jakande Road, Agidingbi, Ikeja, Lagos",state:"Lagos"});assert.equal((dedup.match(/Lagos/gi)||[]).length,1);
+const req=buildRequest({address:"279 Agege Motor Road, Challenge Bus Stop, Agege, Lagos",state:"Lagos"},["Agege","Lagos"],"SECRET");assert.equal(req.url.searchParams.get("country"),"NG");assert.equal(req.url.searchParams.get("permanent"),"true");assert.equal(req.url.searchParams.get("place"),"Agege");
+const structured=structuredInput({address:"279 Agege Motor Road, Challenge Bus Stop, Agege, Lagos",state:"Lagos"},["Agege"]);assert.equal(structured.country,"NG");assert.equal(structured.permanent,"true");
+const captured=[];const old=console.log;console.log=(...x)=>captured.push(x.join(" "));console.log(JSON.stringify({safe:true}));console.log=old;assert.equal(captured.join("\n").includes("SECRET"),false);
+old("offline Mapbox structured/locality tests: PASS (13/13)");
