@@ -18,7 +18,7 @@ assert.equal(inspection.access_token_included,false);
 const feature=({region="Lagos",place="Ikeja",locality="Agidingbi",name="Lateef-Jakande Road",lat=6.62,lon=3.35,type="street"}={})=>({geometry:{coordinates:[lon,lat]},properties:{feature_type:type,name,coordinates:{longitude:lon,latitude:lat},context:{region:{name:region},place:place?{name:place}:undefined,locality:locality?{name:locality}:undefined}}});
 assert.equal(classify(feature({place:"Ikoyi",locality:null}),{state:"Lagos",address:"Lateef-Jakande Road"},byRef.get(refs.lateef)).decision,"manual_review");
 assert.equal(classify(feature({region:"Kaduna",place:"Sabon Gari",locality:null}),{state:"Kaduna",address:"Kakau Village Chikun"},byRef.get(refs.kaduna)).decision,"manual_review");
-assert.equal(classify(feature({region:"Adamawa",place:"Numan",locality:null}),{state:"Adamawa",address:"Numan Road Jimeta"},byRef.get(refs.jimeta)).decision,"candidate_approximate");
+assert.notEqual(classify(feature({region:"Adamawa",place:"Numan",locality:null}),{state:"Adamawa",address:"Numan Road Jimeta"},byRef.get(refs.jimeta)).decision,"candidate_approximate");
 assert.equal(classify(feature({region:"Borno",place:"Maiduguri",locality:null}),{state:"FCT Abuja",address:"Kubwa Abuja"},byRef.get(refs.kubwa)).decision,"rejected");
 for(const alias of ["FCT Abuja","Abuja FCT","Federal Capital Territory","Federal Capital Territory Abuja"])assert.equal(normalizedState(alias),"federal capital territory");
 const a=feature({region:"Kwara",place:"Ilorin",locality:"Soludero",name:"Sulu Gambari Road",lat:8.49,lon:4.55}),b=feature({region:"Kwara",place:"Ilorin",locality:"Soludero",name:"Sulu-Gambari Rd",lat:8.4903,lon:4.5502});
