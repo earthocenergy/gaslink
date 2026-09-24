@@ -65,6 +65,16 @@ Do not treat validate-only counts as production deduplication counts. The `new`,
 
 All new insert payloads are constructed before writing. Approved new rows are submitted as one bulk `.insert(rows)` request rather than sequential per-record inserts, so the pipeline does not intentionally leave a partially imported national dataset because a later loop item failed. Existing rows are never updated by this import path.
 
+## Production closeout — 24 September 2026
+
+The controlled national-directory import completed against the 90-record Pi-CNG source snapshot. The first production dry run classified `90 new / 0 possible_duplicate / 0 conflict / 0 invalid`; the controlled apply inserted 90 rows, and the post-import idempotency dry run classified `0 new / 90 unchanged / 0 possible_duplicate / 0 conflict / 0 invalid`.
+
+All 90 imported directory records remain staged with `registration_status = pending`, `is_verified = false`, and operational values unknown/null. Coordinate coverage remains deliberately limited to the four independently approved overlay records: `4 approximate / 0 exact / 86 unconfirmed`. No automatic Mapbox coordinates were added beyond those four independently approved overlays.
+
+Pending directory records are not anonymous-public under the existing `stations_public_read` policy, so the import does not constitute a public directory launch. Station approval and any transition to public visibility remain a separate product gate.
+
+The controlled server/admin import path required a minimal GIS permission repair for the Supabase `service_role`: `USAGE` on schema `gis` is granted while `CREATE` remains denied. Production records the aligned migration as `20260924165232_grant_service_role_gis_usage.sql`.
+
 ## Offline regression tests
 
 Run:
