@@ -1,0 +1,196 @@
+{
+  "created_at": "2026-09-24",
+  "mode": "offline_request_inspection",
+  "external_requests": 0,
+  "access_token_included": false,
+  "records": [
+    {
+      "source_reference": "picng-7acdd2023622ddc15506e499",
+      "request_mode": "structured",
+      "address_number": null,
+      "street": "Benin-Sapele Road",
+      "place": "Benin City",
+      "locality": null,
+      "neighborhood": null,
+      "region": "Edo",
+      "country": "NG",
+      "permanent": true,
+      "autocomplete": false,
+      "landmark_context": [
+        "KU Plaza",
+        "Opposite PZ Junction"
+      ]
+    },
+    {
+      "source_reference": "picng-7313d7f428cb7e41a9f21be1",
+      "request_mode": "structured",
+      "address_number": null,
+      "street": "Benin-Auchi Road",
+      "place": "Benin City",
+      "locality": "Eyaen",
+      "neighborhood": null,
+      "region": "Edo",
+      "country": "NG",
+      "permanent": true,
+      "autocomplete": false,
+      "landmark_context": [
+        "Km 7",
+        "Adjacent Zafike Hotel"
+      ]
+    },
+    {
+      "source_reference": "picng-380832acf4d33ef3ad1b52fd",
+      "request_mode": "structured",
+      "address_number": null,
+      "street": "Lateef-Jakande Road",
+      "place": "Ikeja",
+      "locality": "Agidingbi",
+      "neighborhood": null,
+      "region": "Lagos",
+      "country": "NG",
+      "permanent": true,
+      "autocomplete": false,
+      "landmark_context": []
+    },
+    {
+      "source_reference": "picng-eda2c536f5b850d1fc330d40",
+      "request_mode": "structured",
+      "address_number": "279",
+      "street": "Agege Motor Road",
+      "place": "Lagos",
+      "locality": "Agege",
+      "neighborhood": null,
+      "region": "Lagos",
+      "country": "NG",
+      "permanent": true,
+      "autocomplete": false,
+      "landmark_context": [
+        "Challenge Bus Stop"
+      ]
+    },
+    {
+      "source_reference": "picng-bd3fa674b66d3759f5272c21",
+      "request_mode": "structured",
+      "address_number": null,
+      "street": "Enugu-Abakaliki Expressway",
+      "place": "Enugu",
+      "locality": null,
+      "neighborhood": null,
+      "region": "Enugu",
+      "country": "NG",
+      "permanent": true,
+      "autocomplete": false,
+      "landmark_context": []
+    },
+    {
+      "source_reference": "picng-9ebf3baa95c1f566035390cb",
+      "request_mode": "free_text",
+      "address_number": null,
+      "street": null,
+      "place": null,
+      "locality": null,
+      "neighborhood": null,
+      "region": null,
+      "country": "NG",
+      "permanent": true,
+      "autocomplete": false,
+      "landmark_context": []
+    },
+    {
+      "source_reference": "picng-dfe3185168c181ed4e824888",
+      "request_mode": "free_text",
+      "address_number": null,
+      "street": null,
+      "place": null,
+      "locality": null,
+      "neighborhood": null,
+      "region": null,
+      "country": "NG",
+      "permanent": true,
+      "autocomplete": false,
+      "landmark_context": [
+        "Plot 17886"
+      ]
+    },
+    {
+      "source_reference": "picng-a251565a45f39fe2dd7fec77",
+      "request_mode": "structured",
+      "address_number": "C27",
+      "street": "Zaria Road",
+      "place": "Kano",
+      "locality": null,
+      "neighborhood": "Sheikh Nasir Kabara Housing Estate",
+      "region": "Kano",
+      "country": "NG",
+      "permanent": true,
+      "autocomplete": false,
+      "landmark_context": []
+    },
+    {
+      "source_reference": "picng-37d3e778634055ab49376adb",
+      "request_mode": "structured",
+      "address_number": null,
+      "street": "Kubwa Expressway",
+      "place": "Abuja",
+      "locality": "Kubwa",
+      "neighborhood": null,
+      "region": "Federal Capital Territory",
+      "country": "NG",
+      "permanent": true,
+      "autocomplete": false,
+      "landmark_context": [
+        "Plot P58",
+        "Cadastral Zone 07-05"
+      ]
+    },
+    {
+      "source_reference": "picng-c08f466cbb9dfd2cb6c691bf",
+      "request_mode": "structured",
+      "address_number": null,
+      "street": "Sulu Gambari Road",
+      "place": "Ilorin",
+      "locality": "Soludero",
+      "neighborhood": null,
+      "region": "Kwara",
+      "country": "NG",
+      "permanent": true,
+      "autocomplete": false,
+      "landmark_context": [
+        "Post Office Terminal"
+      ]
+    },
+    {
+      "source_reference": "picng-bc95a10edf058f1158064010",
+      "request_mode": "structured",
+      "address_number": null,
+      "street": "Numan Road",
+      "place": "Jimeta",
+      "locality": null,
+      "neighborhood": null,
+      "region": "Adamawa",
+      "country": "NG",
+      "permanent": true,
+      "autocomplete": false,
+      "landmark_context": [
+        "Plot 49 & 51",
+        "ADSYP2"
+      ]
+    },
+    {
+      "source_reference": "picng-325ccdc6f2864cf556ab3bbb",
+      "request_mode": "structured",
+      "address_number": null,
+      "street": "Lagos-Ibadan Expressway",
+      "place": "Ibadan",
+      "locality": "Tollgate",
+      "neighborhood": null,
+      "region": "Oyo",
+      "country": "NG",
+      "permanent": true,
+      "autocomplete": false,
+      "landmark_context": [
+        "Tollgate Ibadan Mobil Service Station"
+      ]
+    }
+  ]
+}
