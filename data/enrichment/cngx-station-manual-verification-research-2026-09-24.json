@@ -1,0 +1,119 @@
+{
+  "created_at": "2026-09-24T14:12:00+01:00",
+  "scope": "12_station_independent_location_verification_research",
+  "starting_head": "86cac020e9704c6417abfc4ee5cb950f7e444088",
+  "mapbox_requests_made": 0,
+  "billable_mapbox_requests": 0,
+  "source_policy_notes": [
+    "Mapbox is candidate-generation evidence only and is not counted as independent verification.",
+    "Pi-CNG establishes source-record existence and is not double-counted as independent coordinate evidence.",
+    "Coordinates are recorded only when explicitly available from independent public evidence; none were invented or eyeballed."
+  ],
+  "summary": {
+    "pilot_records_researched": 12,
+    "records_with_at_least_one_independent_source": 12,
+    "records_with_two_or_more_independent_sources": 8,
+    "records_with_independent_coordinate_bearing_evidence": 4,
+    "proposed_distribution": {"verified_exact":0,"verified_approximate":4,"rejected":3,"unresolved":5}
+  },
+  "records": [
+    {
+      "source_reference":"picng-7acdd2023622ddc15506e499","operator":"NIPCO Gas Limited","source_address":"KU Plaza, Benin Sapele Rd, Opposite PZ Junction, Benin City","state":"Edo",
+      "mapbox_candidate":{"latitude":6.323576,"longitude":5.626532,"returned_name":"Benin-Sapele Road","returned_address":"Benin-Sapele Road, Oredo 30, Edo, Nigeria","region":"Edo","place":"Oredo","locality":null,"neighborhood":null,"accuracy":null,"confidence":null},
+      "independent_sources":[{"source_type":"public_map_listing","source_name":"Gastec Nigeria — Sapele Rd CNG Station","source_url":"https://gastecng.com/listing/sapele-rd-cng-station/","observed_at":"2026-09-24T14:12:00+01:00","latitude":6.278932384883786,"longitude":5.633170105865429,"address_text":"KU Plaza, Benin Sapele Rd, opposite PZ junction, Benin City","evidence_notes":"Specific CNG-station listing; public Get Directions target exposes this facility pin."}],
+      "coordinate_source_count":1,"proposed_latitude":6.278932384883786,"proposed_longitude":5.633170105865429,"max_source_separation_m":null,"mapbox_to_verified_distance_m":5018.1,"proposed_verification_status":"verified_approximate","proposed_location_precision":"approximate","verification_rationale":"Independent facility listing supplies one usable pin, but the exact rule requires stronger coordinate corroboration. The Mapbox road point is about 5.0 km away.","unresolved_questions":["Obtain a second independent coordinate-bearing operator, public-map, or field source before considering exact verification."]
+    },
+    {
+      "source_reference":"picng-7313d7f428cb7e41a9f21be1","operator":"NIPCO Gas Limited","source_address":"Km 7 Benin Auchi Rd, Adjacent Zafike Hotel, Eyaen, Benin City","state":"Edo",
+      "mapbox_candidate":{"latitude":6.838413,"longitude":6.252712,"returned_name":"Benin Auchi Road","returned_address":"Benin Auchi Road, Etsako West 31, Edo, Nigeria","region":"Edo","place":"Etsako West","locality":null,"neighborhood":null,"accuracy":null,"confidence":null},
+      "independent_sources":[{"source_type":"official_operator","source_name":"NIPCO Gas — Eyean incident press release","source_url":"https://nipcogas.com/press-release-from-nipco-gas-limited/","observed_at":"2026-09-24T14:12:00+01:00","latitude":null,"longitude":null,"address_text":"Eyean, Benin City, Edo State","evidence_notes":"Official NIPCO statement explicitly identifies its CNG station in Eyean/Benin City."}],
+      "coordinate_source_count":0,"proposed_latitude":null,"proposed_longitude":null,"max_source_separation_m":null,"mapbox_to_verified_distance_m":null,"proposed_verification_status":"rejected","proposed_location_precision":null,"verification_rationale":"Official operator evidence places the facility in Eyean/Benin City, while the selected Mapbox result resolves to Etsako West.","unresolved_questions":["Find a coordinate-bearing public source for the Eyean station before assigning a map pin."]
+    },
+    {
+      "source_reference":"picng-380832acf4d33ef3ad1b52fd","operator":"11 PLC (NIPCO)","source_address":"Lateef-Jakande Road, Agidingbi, Ikeja, Lagos","state":"Lagos",
+      "mapbox_candidate":{"latitude":6.624728,"longitude":3.353058,"returned_name":"Lateef Jakande Road","returned_address":"Lateef Jakande Road, Lagos 10, Lagos, Nigeria","region":"Lagos","place":"Lagos","locality":null,"neighborhood":null,"accuracy":null,"confidence":null},
+      "independent_sources":[
+        {"source_type":"official_operator","source_name":"11 PLC — Agidingbi Ikeja SS Mobil","source_url":"https://11plc.com/sub-distributor-locator/8559/agidingbi-ikeja-ss-mobil/","observed_at":"2026-09-24T14:12:00+01:00","latitude":null,"longitude":null,"address_text":"Lateef Jakande Road, Ikeja, Nigeria","evidence_notes":"Official 11 PLC locator confirms the Mobil station on Lateef Jakande Road, Ikeja."},
+        {"source_type":"public_map_listing","source_name":"Gastec Nigeria — Agidingi CNG Station Lagos","source_url":"https://gastecng.com/listing/agidingi-cng-station-lagos/","observed_at":"2026-09-24T14:12:00+01:00","latitude":6.620922039673479,"longitude":3.3530368724233406,"address_text":"J9C3+86J, Lateef Jakande Rd, Agidingbi, Ikeja 101233, Lagos","evidence_notes":"Specific CNG listing identifies Agidingbi/Ikeja and exposes a public directions pin."}
+      ],
+      "coordinate_source_count":1,"proposed_latitude":6.620922039673479,"proposed_longitude":3.3530368724233406,"max_source_separation_m":null,"mapbox_to_verified_distance_m":423.2,"proposed_verification_status":"verified_approximate","proposed_location_precision":"approximate","verification_rationale":"Operator and public-map evidence establish the same facility/corridor and one usable pin; exact verification is not met with only one coordinate-bearing independent source.","unresolved_questions":["Obtain a second coordinate-bearing source to test exact-facility agreement within approximately 150 m."]
+    },
+    {
+      "source_reference":"picng-eda2c536f5b850d1fc330d40","operator":"11 PLC (NIPCO)","source_address":"279 Agege Motor Road, Challenge Bus Stop, Agege, Lagos","state":"Lagos",
+      "mapbox_candidate":{"latitude":6.53432,"longitude":3.352283,"returned_name":"Agege Motor Road 279","returned_address":"Agege Motor Road 279, Lagos 10, Lagos, Nigeria","region":"Lagos","place":"Lagos","locality":null,"neighborhood":null,"accuracy":"interpolated","confidence":"medium"},
+      "independent_sources":[
+        {"source_type":"official_operator","source_name":"11 PLC — Challenge Mushin SS Mobil","source_url":"https://11plc.com/?p=8476","observed_at":"2026-09-24T14:12:00+01:00","latitude":null,"longitude":null,"address_text":"Challenge, Agege Motor Road, Mushin, Lagos, Nigeria","evidence_notes":"Official locator confirms the Mobil facility on Agege Motor Road at Challenge/Mushin."},
+        {"source_type":"public_map_listing","source_name":"Waze — Mobil petrol and CNGStation Challenge Bus Stop","source_url":"https://www.waze.com/live-map/directions/ng/la/lagos/mobil-petrol-and-cngstation-challenge-bus-stop?to=place.ChIJ2dOGj8aNOxARoCX_k9Evihk","observed_at":"2026-09-24T14:12:00+01:00","latitude":null,"longitude":null,"address_text":"Challenge Bus Stop, G9Q4+X5F, Agege Motor Rd, Mushin, Lagos 102215, Lagos, Nigeria","evidence_notes":"Specific public map listing corroborates the Mobil/CNG facility but did not expose raw coordinates in retrieved evidence."}
+      ],
+      "coordinate_source_count":0,"proposed_latitude":null,"proposed_longitude":null,"max_source_separation_m":null,"mapbox_to_verified_distance_m":null,"proposed_verification_status":"unresolved","proposed_location_precision":null,"verification_rationale":"Independent sources establish facility identity and corridor but no explicit independent coordinate; the interpolated Mapbox point is not promoted.","unresolved_questions":["Capture an explicit coordinate from independent public/operator/field evidence without geocoding."]
+    },
+    {
+      "source_reference":"picng-bd3fa674b66d3759f5272c21","operator":"Amara Oil and Gas","source_address":"Enugu-Abakaliki Expressway, Enugu","state":"Enugu",
+      "mapbox_candidate":{"latitude":6.459509,"longitude":7.544535,"returned_name":"Abakaliki Expressway","returned_address":"Abakaliki Expressway, Enugu North 40, Enugu, Nigeria","region":"Enugu","place":"Enugu North","locality":null,"neighborhood":null,"accuracy":null,"confidence":null},
+      "independent_sources":[
+        {"source_type":"official_operator","source_name":"Amara Oil & Gas official site","source_url":"https://amaraoilandgas.com/","observed_at":"2026-09-24T14:12:00+01:00","latitude":null,"longitude":null,"address_text":"Block Bus Stop, along Enugu-Abakaliki Expressway, opposite Nwanne Di Na Mba Estate, Enugu","evidence_notes":"Operator website gives a specific facility address on the Enugu-Abakaliki corridor."},
+        {"source_type":"public_map_listing","source_name":"WorldOrgs — Amara Oil and Gas","source_url":"https://ng.worldorgs.com/catalog/enugu/gas-station/amaraoilandgas","observed_at":"2026-09-24T14:12:00+01:00","latitude":null,"longitude":null,"address_text":"Block Bus Stop, Enugu-Abakaliki Rd, Enugu","evidence_notes":"Independent business listing materially corroborates the same facility area; no explicit coordinate surfaced."}
+      ],
+      "coordinate_source_count":0,"proposed_latitude":null,"proposed_longitude":null,"max_source_separation_m":null,"mapbox_to_verified_distance_m":null,"proposed_verification_status":"unresolved","proposed_location_precision":null,"verification_rationale":"Facility/corridor is independently corroborated but no coordinate-bearing independent evidence was recovered.","unresolved_questions":["Find an explicit public map/operator coordinate for the Amara facility."]
+    },
+    {
+      "source_reference":"picng-9ebf3baa95c1f566035390cb","operator":"Greenville LNG","source_address":"Ugwu Onyeama, Enugu","state":"Enugu",
+      "mapbox_candidate":{"latitude":6.437164,"longitude":7.503553,"returned_name":"Ugwu Street","returned_address":"Ugwu Street, Enugu North 40, Enugu, Nigeria","region":"Enugu","place":"Enugu North","locality":null,"neighborhood":null,"accuracy":null,"confidence":null},
+      "independent_sources":[{"source_type":"other_authoritative","source_name":"News Agency of Nigeria reporting via Realnews Magazine","source_url":"https://realnewsmagazine.net/south-east-stakeholders-urge-petrol-stations-to-establish-cng-plants/","observed_at":"2026-09-24T14:12:00+01:00","latitude":null,"longitude":null,"address_text":"Ugwu-Onyema, Enugu-Onitsha Expressway, Enugu State","evidence_notes":"NAN-sourced reporting places the Greenville CNG hub at Ugwu-Onyema on Enugu-Onitsha Expressway."}],
+      "coordinate_source_count":0,"proposed_latitude":null,"proposed_longitude":null,"max_source_separation_m":null,"mapbox_to_verified_distance_m":null,"proposed_verification_status":"rejected","proposed_location_precision":null,"verification_rationale":"Independent evidence identifies Ugwu-Onyema on Enugu-Onitsha Expressway, while Mapbox selected Ugwu Street in Enugu North, indicating a road-name collision.","unresolved_questions":["Recover an explicit coordinate from Greenville's public locator or another independent map source."]
+    },
+    {
+      "source_reference":"picng-dfe3185168c181ed4e824888","operator":"Greenville LNG","source_address":"Plot 17886, Kakau Village, Chikun, Kaduna State","state":"Kaduna",
+      "mapbox_candidate":{"latitude":10.450287,"longitude":7.455515,"returned_name":"Chikun","returned_address":"Chikun, Kaduna, Nigeria","region":"Kaduna","place":"Chikun","locality":null,"neighborhood":null,"accuracy":null,"confidence":null},
+      "independent_sources":[
+        {"source_type":"official_government","source_name":"Kaduna State Government — Governor Uba Sani's Scorecard","source_url":"https://outlook.kdsg.gov.ng/1292/","observed_at":"2026-09-24T14:12:00+01:00","latitude":null,"longitude":null,"address_text":"Kakau village, Chikun Local Government, Kaduna State","evidence_notes":"Official state source places the Greenville gas facility at Kakau village in Chikun LGA."},
+        {"source_type":"other_authoritative","source_name":"Nigerian Tribune — gas plant commissioning","source_url":"https://tribuneonlineng.com/gas-plant-will-bring-relief-to-motorists-in-kaduna-gov-sani/","observed_at":"2026-09-24T14:12:00+01:00","latitude":null,"longitude":null,"address_text":"Kakau village, along Kaduna/Abuja highway, Kaduna State","evidence_notes":"Independent reporting corroborates Kakau village and the Kaduna/Abuja highway corridor."}
+      ],
+      "coordinate_source_count":0,"proposed_latitude":null,"proposed_longitude":null,"max_source_separation_m":null,"mapbox_to_verified_distance_m":null,"proposed_verification_status":"unresolved","proposed_location_precision":null,"verification_rationale":"Kakau/Chikun facility area is independently established, but the broad Chikun Mapbox point is not a useful facility coordinate.","unresolved_questions":["Find a coordinate-bearing operator/public map listing for the Kakau facility."]
+    },
+    {
+      "source_reference":"picng-a251565a45f39fe2dd7fec77","operator":"ASAD Energy Fleet","source_address":"C27 Sheikh Nasir Kabara Housing Estate, Zaria Road, Kano","state":"Kano",
+      "mapbox_candidate":{"latitude":11.973275,"longitude":8.545327,"returned_name":"Zaria Road","returned_address":"Zaria Road, Tarauni 70, Kano, Nigeria","region":"Kano","place":"Tarauni","locality":"Gyadi-Gyadin Kudu","neighborhood":null,"accuracy":null,"confidence":null},
+      "independent_sources":[
+        {"source_type":"public_map_listing","source_name":"Asad Energy Fleet Limited, CNG & LNG Gas Station public map listing","source_url":null,"observed_at":"2026-09-24T14:12:00+01:00","latitude":null,"longitude":null,"address_text":"Sheikh Nasiru Kabara City (Amana City), along Zaria Rd, Tamburawa 713104, Kano","evidence_notes":"Specific public business/map listing identifies the ASAD CNG/LNG facility on Zaria Road in the Amana City/Tamburawa area."},
+        {"source_type":"other_authoritative","source_name":"Mode Investment and Development Service Limited — project post","source_url":"https://www.linkedin.com/posts/mode-investment-and-development-service-limited_midsgroup-energysector-lcng-activity-7345599806565769218-gmD3","observed_at":"2026-09-24T14:12:00+01:00","latitude":null,"longitude":null,"address_text":"Kano State, Nigeria","evidence_notes":"Project participant corroborates ASAD Energy Fleet's LCNG station installation in Kano State."}
+      ],
+      "coordinate_source_count":0,"proposed_latitude":null,"proposed_longitude":null,"max_source_separation_m":null,"mapbox_to_verified_distance_m":null,"proposed_verification_status":"unresolved","proposed_location_precision":null,"verification_rationale":"Facility identity and Zaria Road context are supported, but no explicit coordinate was recovered and Tamburawa/Amana City versus Mapbox Tarauni remains unresolved.","unresolved_questions":["Obtain an explicit facility pin and reconcile Tamburawa/Amana City with the Mapbox Tarauni context."]
+    },
+    {
+      "source_reference":"picng-37d3e778634055ab49376adb","operator":"NIPCO Gas Limited","source_address":"Plot P58, Cadastral Zone 07-05, Along Kubwa Expressway, Kubwa, FCT Abuja","state":"FCT Abuja",
+      "mapbox_candidate":{"latitude":9.073523,"longitude":7.475731,"returned_name":"Abuja","returned_address":"Abuja Municipal, Federal Capital Territory, Nigeria","region":"Federal Capital Territory","place":"Abuja Municipal","locality":null,"neighborhood":null,"accuracy":null,"confidence":null},
+      "independent_sources":[
+        {"source_type":"official_operator","source_name":"NIPCO Gas — Kubwa MRU announcement","source_url":"https://nipcogas.com/nipco-gas-commissioned-nigerias-first-mobile-refueling-unit-at-kubwa-abuja/","observed_at":"2026-09-24T14:12:00+01:00","latitude":null,"longitude":null,"address_text":"Kubwa, Abuja","evidence_notes":"Official NIPCO source confirms the CNG refueling facility in Kubwa, Abuja."},
+        {"source_type":"public_map_listing","source_name":"Gastec Nigeria — Kubwa CNG Station","source_url":"https://gastecng.com/listing/kubwa-cng-station/","observed_at":"2026-09-24T14:12:00+01:00","latitude":9.141066062660942,"longitude":7.325064834602081,"address_text":"Plot P58, Cadastral Zone 07-05, Along Kubwa Expressway, Kubwa, FCT Abuja","evidence_notes":"Specific CNG listing matches Plot P58/CAD Zone 07-05 and exposes a public directions pin."},
+        {"source_type":"public_map_listing","source_name":"Waze — Nipco Plc Kubwa Express Way","source_url":"https://www.waze.com/live-map/directions/ng/federal-capital-territory/abuja/nipco-plc-kubwa-express-way?to=place.ChIJ8-t4euvYTRARF1NdcUBjVXw","observed_at":"2026-09-24T14:12:00+01:00","latitude":null,"longitude":null,"address_text":"Plot P58 CAD Zone 7-05 Kubwa Expressway, Abuja","evidence_notes":"Independent public map listing corroborates the exact Plot P58/CAD Zone 7-05 facility address."}
+      ],
+      "coordinate_source_count":1,"proposed_latitude":9.141066062660942,"proposed_longitude":7.325064834602081,"max_source_separation_m":null,"mapbox_to_verified_distance_m":18167.2,"proposed_verification_status":"verified_approximate","proposed_location_precision":"approximate","verification_rationale":"Official and public-map evidence identifies the Plot P58 facility and one usable pin. Only one independent coordinate source exists; the Mapbox Abuja Municipal point is about 18.2 km away.","unresolved_questions":["Obtain a second independent coordinate-bearing source before considering exact verification."]
+    },
+    {
+      "source_reference":"picng-c08f466cbb9dfd2cb6c691bf","operator":"Rolling Energy","source_address":"Post Office Terminal, Sulu Gambari Road, Soludero, Ilorin, Kwara","state":"Kwara",
+      "mapbox_candidate":{"latitude":8.486001,"longitude":4.565897,"returned_name":"Sulu Gambari Road","returned_address":"Sulu Gambari Road, Ilorin East 24, Kwara, Nigeria","region":"Kwara","place":"Ilorin East","locality":null,"neighborhood":null,"accuracy":null,"confidence":null},
+      "independent_sources":[
+        {"source_type":"official_operator","source_name":"Rolling Energy official LinkedIn launch post","source_url":"https://www.linkedin.com/posts/rollingenergy_rollingenergy-cng-cleanenergy-activity-7201594412806619137-JLig","observed_at":"2026-09-24T14:12:00+01:00","latitude":null,"longitude":null,"address_text":"Soludero, Ilorin, Kwara State","evidence_notes":"Official Rolling Energy post identifies its Ilorin CNG station at Soludero."},
+        {"source_type":"other_authoritative","source_name":"Nigerian Tribune — Rolling Energy workshop report","source_url":"https://tribuneonlineng.com/gov-abdulrazaq-commissions-cng-conversion-workshop-in-ilorin/","observed_at":"2026-09-24T14:12:00+01:00","latitude":null,"longitude":null,"address_text":"Post Office area, Ilorin, Kwara State","evidence_notes":"Independent reporting places the facility in Ilorin's Post Office area."},
+        {"source_type":"other_authoritative","source_name":"The Guardian — Kwara launches CNG vehicle conversion initiative","source_url":"https://guardian.ng/news/kwara-launches-cng-vehicle-conversion-initiative/","observed_at":"2026-09-24T14:12:00+01:00","latitude":null,"longitude":null,"address_text":"Ilorin, Kwara State","evidence_notes":"Independent coverage confirms the launch at the Rolling Energy station in Ilorin."}
+      ],
+      "coordinate_source_count":0,"proposed_latitude":null,"proposed_longitude":null,"max_source_separation_m":null,"mapbox_to_verified_distance_m":null,"proposed_verification_status":"unresolved","proposed_location_precision":null,"verification_rationale":"Independent evidence consistently establishes Soludero/Post Office area, but no coordinate-bearing source was recovered; Mapbox road evidence alone is insufficient.","unresolved_questions":["Find an explicit public map/operator coordinate for the Soludero/Post Office facility."]
+    },
+    {
+      "source_reference":"picng-bc95a10edf058f1158064010","operator":"Greenville LNG","source_address":"Plot 49 & 51, Numan Road, ADSYP2, Jimeta, Adamawa State","state":"Adamawa",
+      "mapbox_candidate":{"latitude":9.365203,"longitude":11.65691,"returned_name":"Road","returned_address":"Road, Numan 64, Adamawa, Nigeria","region":"Adamawa","place":"Numan","locality":null,"neighborhood":null,"accuracy":null,"confidence":null},
+      "independent_sources":[{"source_type":"other_authoritative","source_name":"TG News — Adamawa LCNG hub inauguration report","source_url":"https://tgnews.com.ng/adamawa-first-lcng-hub-in-northeast-inaugurated-amidst-high-expectations/","observed_at":"2026-09-24T14:12:00+01:00","latitude":null,"longitude":null,"address_text":"Plot No. 49 and 51, Numan Road, ADSUP2, Jimeta-Yola, Adamawa State","evidence_notes":"Independent inauguration coverage identifies the specific Greenville facility at Plot 49/51 in Jimeta-Yola."}],
+      "coordinate_source_count":0,"proposed_latitude":null,"proposed_longitude":null,"max_source_separation_m":null,"mapbox_to_verified_distance_m":null,"proposed_verification_status":"rejected","proposed_location_precision":null,"verification_rationale":"Independent facility evidence places the hub in Jimeta-Yola; the selected Mapbox result resolves to Numan itself, a materially different locality.","unresolved_questions":["Find an explicit coordinate-bearing public source for the Jimeta-Yola LCNG hub."]
+    },
+    {
+      "source_reference":"picng-325ccdc6f2864cf556ab3bbb","operator":"11 PLC (NIPCO)","source_address":"Tollgate Ibadan Mobil Service Station, Lagos/Ibadan Expressway, Tollgate, Ibadan","state":"Oyo",
+      "mapbox_candidate":{"latitude":null,"longitude":null,"returned_name":null,"returned_address":null,"region":null,"place":null,"locality":null,"neighborhood":null,"accuracy":null,"confidence":null},
+      "independent_sources":[
+        {"source_type":"official_operator","source_name":"NIPCO Gas — Mobility CNG Filling Station in Ibadan","source_url":"https://nipcogas.com/nipco-gas-commissioned-autocng-filling-station-in-ibadan-oyo-state-in-line-with-expanding-autocng-footprints-across-nigeria-for-providing-economical-fuel-to-motorists/","observed_at":"2026-09-24T14:12:00+01:00","latitude":null,"longitude":null,"address_text":"Mobil Station near the toll gate on the Ibadan-Lagos Expressway, Ibadan, Oyo State","evidence_notes":"Official operator announcement identifies the actual Toll Gate/Mobil CNG facility."},
+        {"source_type":"public_map_listing","source_name":"Gastec Nigeria — Ibadan CNG St & Conversion Workshop","source_url":"https://gastecng.com/listing/ibadan-cng-st-conversion-workshop/","observed_at":"2026-09-24T14:12:00+01:00","latitude":7.326216555117566,"longitude":3.874622989883409,"address_text":"Expressway1, Ibadan 110115, Oyo","evidence_notes":"Specific CNG station/workshop listing exposes a public directions pin in Ibadan."}
+      ],
+      "coordinate_source_count":1,"proposed_latitude":7.326216555117566,"proposed_longitude":3.874622989883409,"max_source_separation_m":null,"mapbox_to_verified_distance_m":null,"proposed_verification_status":"verified_approximate","proposed_location_precision":"approximate","verification_rationale":"Official operator evidence identifies the Toll Gate facility and an independent CNG listing supplies one usable pin. Exact verification is not met with one coordinate-bearing source.","unresolved_questions":["Obtain a second independent coordinate-bearing source before considering exact verification."]
+    }
+  ]
+}

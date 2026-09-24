@@ -1,0 +1,27 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import {classify,structuredInput,normalizedState,sameLocationCluster} from "./geocode-station-locations-mapbox.mjs";
+const cfg=JSON.parse(fs.readFileSync("data/enrichment/mapbox-structured-geocoding-pilot-components-2026-09-24.json","utf8"));
+const inspection=JSON.parse(fs.readFileSync("data/enrichment/mapbox-structured-geocoding-pilot-requests-2026-09-24.json","utf8"));
+const byRef=new Map(cfg.records.map(r=>[r.source_reference,r])), req=new Map(inspection.records.map(r=>[r.source_reference,r]));
+const refs={lateef:"picng-380832acf4d33ef3ad1b52fd",kano:"picng-a251565a45f39fe2dd7fec77",kubwa:"picng-37d3e778634055ab49376adb",jimeta:"picng-bc95a10edf058f1158064010",ibadan:"picng-325ccdc6f2864cf556ab3bbb",kaduna:"picng-dfe3185168c181ed4e824888",eyaen:"picng-7313d7f428cb7e41a9f21be1",agege:"picng-eda2c536f5b850d1fc330d40"};
+assert.deepEqual([req.get(refs.lateef).place,req.get(refs.lateef).locality],["Ikeja","Agidingbi"]);
+assert.deepEqual([req.get(refs.kano).address_number,req.get(refs.kano).street,req.get(refs.kano).place,req.get(refs.kano).neighborhood],["C27","Zaria Road","Kano","Sheikh Nasir Kabara Housing Estate"]);
+assert.deepEqual([req.get(refs.kubwa).place,req.get(refs.kubwa).locality,req.get(refs.kubwa).street],["Abuja","Kubwa","Kubwa Expressway"]);
+assert.deepEqual([req.get(refs.jimeta).place,req.get(refs.jimeta).street],["Jimeta","Numan Road"]);
+assert.deepEqual([req.get(refs.ibadan).place,req.get(refs.ibadan).locality,req.get(refs.ibadan).street],["Ibadan","Tollgate","Lagos-Ibadan Expressway"]);
+assert.equal(req.get(refs.kubwa).address_number,null);assert.equal(req.get(refs.kaduna).address_number,null);assert.equal(req.get(refs.jimeta).address_number,null);assert.equal(req.get(refs.eyaen).address_number,null);
+assert.equal(req.get(refs.agege).address_number,"279");assert.equal(req.get(refs.kano).address_number,"C27");
+assert.equal(req.get(refs.kubwa).region,"Federal Capital Territory");
+for(const r of inspection.records){assert.equal(r.country,"NG");assert.equal(r.permanent,true);assert.equal(r.autocomplete,false);assert.equal("access_token" in r,false)}
+assert.equal(inspection.access_token_included,false);
+const feature=({region="Lagos",place="Ikeja",locality="Agidingbi",name="Lateef-Jakande Road",lat=6.62,lon=3.35,type="street"}={})=>({geometry:{coordinates:[lon,lat]},properties:{feature_type:type,name,coordinates:{longitude:lon,latitude:lat},context:{region:{name:region},place:place?{name:place}:undefined,locality:locality?{name:locality}:undefined}}});
+assert.equal(classify(feature({place:"Ikoyi",locality:null}),{state:"Lagos",address:"Lateef-Jakande Road"},byRef.get(refs.lateef)).decision,"manual_review");
+assert.equal(classify(feature({region:"Kaduna",place:"Sabon Gari",locality:null}),{state:"Kaduna",address:"Kakau Village Chikun"},byRef.get(refs.kaduna)).decision,"manual_review");
+assert.notEqual(classify(feature({region:"Adamawa",place:"Numan",locality:null}),{state:"Adamawa",address:"Numan Road Jimeta"},byRef.get(refs.jimeta)).decision,"candidate_approximate");
+assert.equal(classify(feature({region:"Borno",place:"Maiduguri",locality:null}),{state:"FCT Abuja",address:"Kubwa Abuja"},byRef.get(refs.kubwa)).decision,"rejected");
+for(const alias of ["FCT Abuja","Abuja FCT","Federal Capital Territory","Federal Capital Territory Abuja"])assert.equal(normalizedState(alias),"federal capital territory");
+const a=feature({region:"Kwara",place:"Ilorin",locality:"Soludero",name:"Sulu Gambari Road",lat:8.49,lon:4.55}),b=feature({region:"Kwara",place:"Ilorin",locality:"Soludero",name:"Sulu-Gambari Rd",lat:8.4903,lon:4.5502});
+assert.equal(sameLocationCluster(a,b,{state:"Kwara"},byRef.get("picng-c08f466cbb9dfd2cb6c691bf")),true);
+assert.equal(structuredInput({state:"Enugu"},byRef.get("picng-9ebf3baa95c1f566035390cb")),null);
+console.log("offline typed Mapbox request tests: PASS (16 required controls + locality/clustering fixtures)");

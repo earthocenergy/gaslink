@@ -1,0 +1,312 @@
+{
+  "created_at": "2026-09-24",
+  "scope": "second_structured_mapbox_pilot_manual_verification",
+  "record_count": 12,
+  "allowed_verification_statuses": [
+    "pending",
+    "verified_exact",
+    "verified_approximate",
+    "rejected",
+    "unresolved"
+  ],
+  "verification_source_schema": {
+    "source_type": "official_operator | official_government | public_map_listing | operator_contact | field_verification | other_authoritative",
+    "source_name": null,
+    "source_url": null,
+    "observed_at": null,
+    "latitude": null,
+    "longitude": null,
+    "address_text": null,
+    "evidence_notes": null
+  },
+  "verification_policy": {
+    "verified_exact": "May only be assigned where independent evidence identifies the actual facility/site coordinate with high confidence.",
+    "verified_approximate": "May be assigned where independent evidence establishes the correct corridor/locality and the point is useful for navigation/discovery, but the exact facility entrance/site is not proven.",
+    "rejected": "Used where the Mapbox candidate contradicts credible independent location evidence.",
+    "unresolved": "Used when there is insufficient evidence to assign a useful coordinate.",
+    "constraints": [
+      "A road match alone is not facility verification.",
+      "State match alone is not location verification.",
+      "Mapbox alone is not independent verification."
+    ]
+  },
+  "production_mapping_policy": {
+    "verified_exact": {
+      "location_precision": "exact"
+    },
+    "verified_approximate": {
+      "location_precision": "approximate"
+    },
+    "unresolved": {
+      "map_pin": "none until coordinates are usable"
+    },
+    "provenance": "Provider and verification provenance must remain visible in the data model.",
+    "operational_claims": "Coordinate verification alone must not imply CNGx verified, live, open, price confirmed, or queue confirmed."
+  },
+  "records": [
+    {
+      "source_reference": "picng-7acdd2023622ddc15506e499",
+      "operator": "NIPCO Gas Limited",
+      "source_address": "KU Plaza, Benin Sapele Rd, Opposite PZ Junction, Benin City",
+      "state": "Edo",
+      "best_mapbox_candidate": {
+        "mapbox_id": "address.8027312740982858",
+        "latitude": 6.323576,
+        "longitude": 5.626532,
+        "returned_name": "Benin-Sapele Road",
+        "returned_address": "Benin-Sapele Road, Oredo 30, Edo, Nigeria",
+        "region": "Edo",
+        "place": "Oredo",
+        "locality": null,
+        "neighborhood": null,
+        "accuracy": null,
+        "confidence": null
+      },
+      "verification_status": "pending",
+      "verification_sources": [],
+      "verification_notes": "Mapbox provides candidate-generation evidence only. Independent verification is required before assigning a coordinate."
+    },
+    {
+      "source_reference": "picng-7313d7f428cb7e41a9f21be1",
+      "operator": "NIPCO Gas Limited",
+      "source_address": "Km 7 Benin Auchi Rd, Adjacent Zafike Hotel, Eyaen, Benin City",
+      "state": "Edo",
+      "best_mapbox_candidate": {
+        "mapbox_id": "address.8099387253695428",
+        "latitude": 6.838413,
+        "longitude": 6.252712,
+        "returned_name": "Benin Auchi Road",
+        "returned_address": "Benin Auchi Road, Etsako West 31, Edo, Nigeria",
+        "region": "Edo",
+        "place": "Etsako West",
+        "locality": null,
+        "neighborhood": null,
+        "accuracy": null,
+        "confidence": null
+      },
+      "verification_status": "pending",
+      "verification_sources": [],
+      "verification_notes": "Mapbox provides candidate-generation evidence only. Independent verification is required before assigning a coordinate."
+    },
+    {
+      "source_reference": "picng-380832acf4d33ef3ad1b52fd",
+      "operator": "11 PLC (NIPCO)",
+      "source_address": "Lateef-Jakande Road, Agidingbi, Ikeja, Lagos",
+      "state": "Lagos",
+      "best_mapbox_candidate": {
+        "mapbox_id": "address.3339104699202530",
+        "latitude": 6.624728,
+        "longitude": 3.353058,
+        "returned_name": "Lateef Jakande Road",
+        "returned_address": "Lateef Jakande Road, Lagos 10, Lagos, Nigeria",
+        "region": "Lagos",
+        "place": "Lagos",
+        "locality": null,
+        "neighborhood": null,
+        "accuracy": null,
+        "confidence": null
+      },
+      "verification_status": "pending",
+      "verification_sources": [],
+      "verification_notes": "Structured input materially improved the Lateef Jakande Road candidate, but provider locality evidence did not positively establish Agidingbi/Ikeja. Independent verification required."
+    },
+    {
+      "source_reference": "picng-eda2c536f5b850d1fc330d40",
+      "operator": "11 PLC (NIPCO)",
+      "source_address": "279 Agege Motor Road, Challenge Bus Stop, Agege, Lagos",
+      "state": "Lagos",
+      "best_mapbox_candidate": {
+        "mapbox_id": "dXJuOm1ieGFkci1pdHA6ZXlKamIzVnVkSEo1SWpvaVRrY2lMQ0p5WldkcGIyNGlPaUpNWVdkdmN5SXNJbkJzWVdObElqb2lUR0ZuYjNNaUxDSnNiMk5oYkdsMGVTSTZJa0ZuWldkbElpd2ljM1J5WldWMElqb2lRV2RsWjJVZ1RXOTBiM0lnVW05aFpDSXNJbUZrWkhKbGMzTmZiblZ0WW1WeUlqb2lNamM1SWl3aVlYVjBiMk52YlhCc1pYUmxJam9pWm1Gc2MyVWlMQ0p3WlhKdFlXNWxiblFpT2lKMGNuVmxJaXdpYkdsdGFYUWlPaUkxSWl3aWFXNWpiSFZrWlY5dFlYUmphRjlrWlhSaGFXd2lPaUowY25WbElpd2liVzlrWlNJNkltWnZjbmRoY21RaWZROjA",
+        "latitude": 6.53432,
+        "longitude": 3.352283,
+        "returned_name": "Agege Motor Road 279",
+        "returned_address": "Agege Motor Road 279, Lagos 10, Lagos, Nigeria",
+        "region": "Lagos",
+        "place": "Lagos",
+        "locality": null,
+        "neighborhood": null,
+        "accuracy": "interpolated",
+        "confidence": "medium"
+      },
+      "verification_status": "pending",
+      "verification_sources": [],
+      "verification_notes": "Mapbox recognized address number 279 and Agege Motor Road, but the returned point is interpolated and is not facility-verified. Independent verification required."
+    },
+    {
+      "source_reference": "picng-bd3fa674b66d3759f5272c21",
+      "operator": "Amara Oil and Gas",
+      "source_address": "Enugu-Abakaliki Expressway, Enugu",
+      "state": "Enugu",
+      "best_mapbox_candidate": {
+        "mapbox_id": "address.1681346976237868",
+        "latitude": 6.459509,
+        "longitude": 7.544535,
+        "returned_name": "Abakaliki Expressway",
+        "returned_address": "Abakaliki Expressway, Enugu North 40, Enugu, Nigeria",
+        "region": "Enugu",
+        "place": "Enugu North",
+        "locality": null,
+        "neighborhood": null,
+        "accuracy": null,
+        "confidence": null
+      },
+      "verification_status": "pending",
+      "verification_sources": [],
+      "verification_notes": "Mapbox provides candidate-generation evidence only. Independent verification is required before assigning a coordinate."
+    },
+    {
+      "source_reference": "picng-9ebf3baa95c1f566035390cb",
+      "operator": "Greenville LNG",
+      "source_address": "Ugwu Onyeama, Enugu",
+      "state": "Enugu",
+      "best_mapbox_candidate": {
+        "mapbox_id": "address.7064234754665222",
+        "latitude": 6.437164,
+        "longitude": 7.503553,
+        "returned_name": "Ugwu Street",
+        "returned_address": "Ugwu Street, Enugu North 40, Enugu, Nigeria",
+        "region": "Enugu",
+        "place": "Enugu North",
+        "locality": null,
+        "neighborhood": null,
+        "accuracy": null,
+        "confidence": null
+      },
+      "verification_status": "pending",
+      "verification_sources": [],
+      "verification_notes": "Mapbox provides candidate-generation evidence only. Independent verification is required before assigning a coordinate."
+    },
+    {
+      "source_reference": "picng-dfe3185168c181ed4e824888",
+      "operator": "Greenville LNG",
+      "source_address": "Plot 17886, Kakau Village, Chikun, Kaduna State",
+      "state": "Kaduna",
+      "best_mapbox_candidate": {
+        "mapbox_id": "dXJuOm1ieHBsYzpFWWlt",
+        "latitude": 10.450287,
+        "longitude": 7.455515,
+        "returned_name": "Chikun",
+        "returned_address": "Chikun, Kaduna, Nigeria",
+        "region": "Kaduna",
+        "place": "Chikun",
+        "locality": null,
+        "neighborhood": null,
+        "accuracy": null,
+        "confidence": null
+      },
+      "verification_status": "pending",
+      "verification_sources": [],
+      "verification_notes": "Fail-closed handling avoided automatic acceptance of the previous Sabon Gari result. Current provider evidence is broad and does not verify the facility."
+    },
+    {
+      "source_reference": "picng-a251565a45f39fe2dd7fec77",
+      "operator": "ASAD Energy Fleet",
+      "source_address": "C27 Sheikh Nasir Kabara Housing Estate, Zaria Road, Kano",
+      "state": "Kano",
+      "best_mapbox_candidate": {
+        "mapbox_id": "address.5287355985928266",
+        "latitude": 11.973275,
+        "longitude": 8.545327,
+        "returned_name": "Zaria Road",
+        "returned_address": "Zaria Road, Tarauni 70, Kano, Nigeria",
+        "region": "Kano",
+        "place": "Tarauni",
+        "locality": "Gyadi-Gyadin Kudu",
+        "neighborhood": null,
+        "accuracy": null,
+        "confidence": null
+      },
+      "verification_status": "pending",
+      "verification_sources": [],
+      "verification_notes": "Mapbox provides candidate-generation evidence only. Independent verification is required before assigning a coordinate."
+    },
+    {
+      "source_reference": "picng-37d3e778634055ab49376adb",
+      "operator": "NIPCO Gas Limited",
+      "source_address": "Plot P58, Cadastral Zone 07-05, Along Kubwa Expressway, Kubwa, FCT Abuja",
+      "state": "FCT Abuja",
+      "best_mapbox_candidate": {
+        "mapbox_id": "dXJuOm1ieHBsYzpBWWlt",
+        "latitude": 9.073523,
+        "longitude": 7.475731,
+        "returned_name": "Abuja",
+        "returned_address": "Abuja Municipal, Federal Capital Territory, Nigeria",
+        "region": "Federal Capital Territory",
+        "place": "Abuja Municipal",
+        "locality": null,
+        "neighborhood": null,
+        "accuracy": null,
+        "confidence": null
+      },
+      "verification_status": "pending",
+      "verification_sources": [],
+      "verification_notes": "Second pilot improved from the prior wrong-state/Borno failure to Abuja Municipal / Federal Capital Territory, but Kubwa and the station-level location remain unverified."
+    },
+    {
+      "source_reference": "picng-c08f466cbb9dfd2cb6c691bf",
+      "operator": "Rolling Energy",
+      "source_address": "Post Office Terminal, Sulu Gambari Road, Soludero, Ilorin, Kwara",
+      "state": "Kwara",
+      "best_mapbox_candidate": {
+        "mapbox_id": "address.4553161934244760",
+        "latitude": 8.486001,
+        "longitude": 4.565897,
+        "returned_name": "Sulu Gambari Road",
+        "returned_address": "Sulu Gambari Road, Ilorin East 24, Kwara, Nigeria",
+        "region": "Kwara",
+        "place": "Ilorin East",
+        "locality": null,
+        "neighborhood": null,
+        "accuracy": null,
+        "confidence": null
+      },
+      "verification_status": "pending",
+      "verification_sources": [],
+      "verification_notes": "Mapbox provides candidate-generation evidence only. Independent verification is required before assigning a coordinate."
+    },
+    {
+      "source_reference": "picng-bc95a10edf058f1158064010",
+      "operator": "Greenville LNG",
+      "source_address": "Plot 49 & 51, Numan Road, ADSYP2, Jimeta, Adamawa State",
+      "state": "Adamawa",
+      "best_mapbox_candidate": {
+        "mapbox_id": "address.3538042858332766",
+        "latitude": 9.365203,
+        "longitude": 11.65691,
+        "returned_name": "Road",
+        "returned_address": "Road, Numan 64, Adamawa, Nigeria",
+        "region": "Adamawa",
+        "place": "Numan",
+        "locality": null,
+        "neighborhood": null,
+        "accuracy": null,
+        "confidence": null
+      },
+      "verification_status": "pending",
+      "verification_sources": [],
+      "verification_notes": "Provider continues to resolve toward Numan rather than Jimeta. Do not accept without independent evidence."
+    },
+    {
+      "source_reference": "picng-325ccdc6f2864cf556ab3bbb",
+      "operator": "11 PLC (NIPCO)",
+      "source_address": "Tollgate Ibadan Mobil Service Station, Lagos/Ibadan Expressway, Tollgate, Ibadan",
+      "state": "Oyo",
+      "best_mapbox_candidate": {
+        "mapbox_id": null,
+        "latitude": null,
+        "longitude": null,
+        "returned_name": null,
+        "returned_address": null,
+        "region": null,
+        "place": null,
+        "locality": null,
+        "neighborhood": null,
+        "accuracy": null,
+        "confidence": null
+      },
+      "verification_status": "pending",
+      "verification_sources": [],
+      "verification_notes": "No useful state/locality-compatible Mapbox result. Independent verification is required before any coordinate can be assigned."
+    }
+  ]
+}

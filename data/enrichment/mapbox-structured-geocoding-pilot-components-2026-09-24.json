@@ -1,0 +1,104 @@
+{
+  "created_at": "2026-09-24",
+  "policy": "Typed only from immutable source-address text. Provider responses must never populate these query components.",
+  "records": [
+    {
+      "source_reference": "picng-7acdd2023622ddc15506e499",
+      "place": "Benin City",
+      "street": "Benin-Sapele Road",
+      "landmark_context": [
+        "KU Plaza",
+        "Opposite PZ Junction"
+      ]
+    },
+    {
+      "source_reference": "picng-7313d7f428cb7e41a9f21be1",
+      "place": "Benin City",
+      "locality": "Eyaen",
+      "street": "Benin-Auchi Road",
+      "landmark_context": [
+        "Km 7",
+        "Adjacent Zafike Hotel"
+      ]
+    },
+    {
+      "source_reference": "picng-380832acf4d33ef3ad1b52fd",
+      "place": "Ikeja",
+      "locality": "Agidingbi",
+      "street": "Lateef-Jakande Road"
+    },
+    {
+      "source_reference": "picng-eda2c536f5b850d1fc330d40",
+      "address_number": "279",
+      "street": "Agege Motor Road",
+      "place": "Lagos",
+      "locality": "Agege",
+      "landmark_context": [
+        "Challenge Bus Stop"
+      ]
+    },
+    {
+      "source_reference": "picng-bd3fa674b66d3759f5272c21",
+      "place": "Enugu",
+      "street": "Enugu-Abakaliki Expressway"
+    },
+    {
+      "source_reference": "picng-9ebf3baa95c1f566035390cb",
+      "place": "Enugu",
+      "locality": "Ugwu Onyeama"
+    },
+    {
+      "source_reference": "picng-dfe3185168c181ed4e824888",
+      "place": "Chikun",
+      "locality": "Kakau Village",
+      "landmark_context": [
+        "Plot 17886"
+      ]
+    },
+    {
+      "source_reference": "picng-a251565a45f39fe2dd7fec77",
+      "address_number": "C27",
+      "street": "Zaria Road",
+      "place": "Kano",
+      "neighborhood": "Sheikh Nasir Kabara Housing Estate"
+    },
+    {
+      "source_reference": "picng-37d3e778634055ab49376adb",
+      "place": "Abuja",
+      "locality": "Kubwa",
+      "street": "Kubwa Expressway",
+      "region_query": "Federal Capital Territory",
+      "landmark_context": [
+        "Plot P58",
+        "Cadastral Zone 07-05"
+      ]
+    },
+    {
+      "source_reference": "picng-c08f466cbb9dfd2cb6c691bf",
+      "place": "Ilorin",
+      "locality": "Soludero",
+      "street": "Sulu Gambari Road",
+      "landmark_context": [
+        "Post Office Terminal"
+      ]
+    },
+    {
+      "source_reference": "picng-bc95a10edf058f1158064010",
+      "place": "Jimeta",
+      "street": "Numan Road",
+      "landmark_context": [
+        "Plot 49 & 51",
+        "ADSYP2"
+      ]
+    },
+    {
+      "source_reference": "picng-325ccdc6f2864cf556ab3bbb",
+      "place": "Ibadan",
+      "locality": "Tollgate",
+      "street": "Lagos-Ibadan Expressway",
+      "landmark_context": [
+        "Tollgate Ibadan Mobil Service Station"
+      ]
+    }
+  ]
+}
