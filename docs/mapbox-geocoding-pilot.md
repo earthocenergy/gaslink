@@ -31,5 +31,18 @@ The prepared second-pilot output path is `data/enrichment/mapbox-structured-geoc
 ## Offline verification
 `node scripts/test-geocode-station-locations-mapbox.mjs` verifies duplicate geographic-token removal; Chikun/Sabon Gari and Jimeta/Numan fail-closed cases; Agidingbi/Ikeja locality inconsistency; FCT/Borno rejection and FCT aliases; locality-supported approximate classification; missing-locality fail-closed behavior; conservative same-road clustering; no exact upgrade from clustering; structured `country=NG` and `permanent=true`; and token non-emission. Tests make no API request.
 
+
+## Typed Nigerian components hardening
+The second-pilot query configuration now preserves typed source semantics instead of flattening place and neighborhood hints. Source-controlled components live in `data/enrichment/mapbox-structured-geocoding-pilot-components-2026-09-24.json`. Only components directly supported by the immutable source address are populated.
+
+Ten records safely use Structured Input. Ugwu Onyeama/Enugu and Plot 17886/Kakau Village/Chikun remain controlled free-text fallbacks because their source text cannot be represented honestly as a normal structured street/address without manufacturing a component.
+
+Address-number safety is explicit: only `279` and `C27` are used as `address_number`. `Km 7`, `Plot 17886`, `Plot P58`, and `Plot 49 & 51` are never submitted as address numbers. The Kubwa request preserves CNGx source state `FCT Abuja` while sending the provider-query region alias `Federal Capital Territory`.
+
+The locality fail-closed rule is hierarchical: when a typed locality or neighborhood exists, provider context must positively support a meaningful typed sublocality; otherwise the candidate cannot auto-qualify. When no sublocality is supplied, the typed place is used as the locality guard. State contradiction still rejects immediately.
+
+## Offline request inspection
+Exact token-free request components for all 12 records are committed at `data/enrichment/mapbox-structured-geocoding-pilot-requests-2026-09-24.json`. The artifact contains request mode, address number, street, place, locality, neighborhood, region, country, permanent/autocomplete flags, and source landmark context retained only for review. It contains no access token and required no Mapbox request.
+
 ## Current gate
 No second-pilot Mapbox request has been made in this hardening prompt. No remaining 78 stations were geocoded. No Supabase write, migration or station import is authorized. Product-lead authorization is required before executing the prepared second structured pilot.
