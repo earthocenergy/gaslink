@@ -83,5 +83,21 @@ No further Mapbox execution is authorized during closeout. Do not run `--pilot -
 
 No Supabase write, migration, national station import, or production change is authorized as part of this closeout.
 
+## Independent manual verification pilot
+The next gate researches independent public evidence for the same 12 pilot records. Mapbox remains useful as a **candidate-generation source**, but its coordinates are not treated as independent verification or as automatic authority.
+
+Evidence is preferred in this order: official operator sources, official government sources, independently maintained public map/listing evidence, then other authoritative public sources. Pi-CNG remains the source-record provenance and is not double-counted as a separate coordinate-verification source.
+
+Research classification follows the manual-verification policy:
+
+- `verified_exact` requires independent evidence identifying the actual facility coordinate with high confidence; two coordinate-bearing sources should agree within approximately 150 metres, or an official facility pin must be independently corroborated.
+- `verified_approximate` requires independent evidence establishing a useful facility corridor/locality and a defensible navigation/discovery point while exact entrance/site location remains unproven.
+- `rejected` applies when independent evidence materially contradicts the selected Mapbox candidate.
+- `unresolved` applies when evidence is insufficient for a useful coordinate; unresolved is preferable to lowering the standard.
+
+All **12** pilot records were researched. The proposed research distribution is **0 verified_exact, 4 verified_approximate, 3 rejected, and 5 unresolved**. Four records have an explicit independent coordinate-bearing public pin; no record currently has two independent coordinate-bearing sources, so none meets the exact-verification rule.
+
+The derived research artifact is `data/enrichment/cngx-station-manual-verification-research-2026-09-24.json`. These classifications are **research proposals for product-lead review only** and are not production-approved verification statuses.
+
 ## Current gate
-Manual verification of the same 12 pilot records is the next permitted location-quality step. National bulk geocoding remains blocked pending evidence from that verification process and a subsequent product decision.
+Product-lead review of the 12-station independent-verification research is the next permitted location-quality step. National bulk geocoding remains blocked. No further Mapbox request, remaining-78 processing, Supabase write, migration, station import, or merge is authorized by this research stage.
