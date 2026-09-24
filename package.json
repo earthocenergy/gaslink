@@ -2,7 +2,14 @@
   "name":"gaslink",
   "version":"0.1.0",
   "private":true,
-  "scripts":{"dev":"next dev","build":"next build","start":"next start"},
+  "scripts":{
+    "dev":"next dev",
+    "test:directory-import":"node scripts/test-import-station-snapshot.mjs",
+    "validate:directory-import":"node scripts/import-station-snapshot.mjs data/sources/picng-refuelling-stations-2026-09-21.json --overlay data/enrichment/picng-refuelling-stations-location-overlay-2026-09-24.json --validate-only",
+    "prebuild":"npm run test:directory-import && npm run validate:directory-import",
+    "build":"next build",
+    "start":"next start"
+  },
   "dependencies":{"@supabase/ssr":"0.7.0","@supabase/supabase-js":"2.58.0","lucide-react":"0.468.0","next":"latest","react":"latest","react-dom":"latest"},
   "devDependencies":{"@types/node":"22.15.30","@types/react":"latest","@types/react-dom":"latest","typescript":"5.8.3"}
 }
