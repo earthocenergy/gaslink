@@ -1,28 +1,35 @@
 # Mapbox Permanent Geocoding pilot
 
-## Status
-The pilot pipeline is hardened for Mapbox Geocoding API v6 response semantics but remains fully offline. No external geocoding request has been made. A server-only `MAPBOX_ACCESS_TOKEN` is intentionally not requested or stored by this branch.
+## First Permanent pilot — executed evidence
+The first 12-station Mapbox Geocoding API v6 pilot used `permanent=true` and made **14 billable searches**. The immutable raw evidence remains at `data/enrichment/mapbox-permanent-geocoding-pilot-2026-09-22.json`: **0 candidate_exact, 3 script-generated candidate_approximate, 7 manual_review, 2 unresolved**. The raw provider responses and alternate candidates are not rewritten by later review. fileciteturn1111file0L22-L31
 
-## Provider and storage contract
-Executable requests are exclusively Mapbox Geocoding API v6 Permanent Geocoding and set `permanent=true`, `country=NG`, `autocomplete=false`, and `limit=5`. Search Box, temporary Mapbox geocoding and alternate providers are not fallback paths.
+Product-lead review found: KU Plaza/Benin-Sapele was road-level only; Eyaen/Benin-Auchi had ambiguous road segments; Lateef-Jakande's primary result conflicted with supplied Agidingbi/Ikeja locality; 279 Agege Motor Road was interpolated/low-confidence; Enugu-Abakaliki was corridor-level with multiple road variants; Ugwu Onyeama had similarly named Enugu streets; Kakau/Chikun's automatic approximate was rejected because the primary result was Sabon Gari; Sheikh Nasir Kabara/Kano had multiple nearby road candidates; Kubwa/FCT fell back to Borno; Sulu Gambari/Ilorin was strongest at road level only; Jimeta's automatic approximate was rejected because the primary result was Numan; Tollgate/Ibadan had no acceptable Oyo/Ibadan result. These findings make the first free-text pilot insufficient for national rollout. fileciteturn1111file0L74-L112
 
-## Response parsing and review
-Geocoding v6 object context is authoritative: `properties.context.country`, `region`, `place`, `district`, and `locality` are read safely by name/display fields. Legacy array context is tolerated only as backwards compatibility.
+## Locality fail-closed policy
+State agreement alone is insufficient. When a source address explicitly contains a city, town, municipality, LGA or locality, both `candidate_exact` and `candidate_approximate` require positive compatible provider locality evidence from place/locality/district/neighborhood context. Missing or inconsistent locality evidence becomes manual review, rejected, or unresolved. Curated source-only hints are stored in `data/enrichment/mapbox-permanent-geocoding-pilot-locality-hints-2026-09-24.json`. No provider-derived locality is inserted into that configuration. fileciteturn1111file0L115-L164
 
-Each billable query may return up to five compact candidates. The tool evaluates candidate state, locality/address evidence, feature type, Smart Address Match confidence/component match codes and coordinate accuracy. Exactly one clearly superior candidate may proceed to normal classification. Two or more materially plausible candidates force `manual_review` while compact alternate evidence is retained.
+FCT comparison uses explicit aliases only: FCT Abuja, Abuja FCT, Federal Capital Territory, and Federal Capital Territory Abuja normalize to one comparison identity. Generic fuzzy state matching is not used. fileciteturn1111file0L258-L272
 
-`candidate_exact` fails closed: positive returned-region evidence matching the source state is required; confidence must be exact/high; feature type must be address; accuracy must be rooftop/parcel/point; and region or other critical component match-code contradictions prevent exact classification. Interpolated/approximate/intersection positions are never facility-level exact.
+## Offline reclassification
+The stricter locality-aware rules were applied offline to the saved first-pilot candidates without any Mapbox request. Derived review evidence is in `data/enrichment/mapbox-permanent-geocoding-pilot-reviewed-2026-09-24.json`; the raw file remains unchanged.
 
-## Query discipline
-Variant 1 is normalized full source address + state. Variant 2 preserves the same meaningful address components and state while normalizing common road/street/landmark abbreviations and punctuation. Both remain constrained by `country=NG`. A second query is allowed only when the first is absent/rejected/unresolved. Hard ceiling remains 24 searches.
+Distribution after review: **0 candidate_exact, 0 candidate_approximate, 10 manual_review, 0 rejected, 2 unresolved**. The three former automatic approximate results (KU Plaza, Kakau/Chikun, Jimeta) no longer auto-qualify.
 
-## Secret/request safety
-Plain execution and `--pilot` alone make zero requests. External calls require both `--pilot --execute` plus server-only `MAPBOX_ACCESS_TOKEN`. Execution is refused if `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` is present. The token is never printed or persisted. The script never connects to Supabase.
+## Structured-input second pilot
+The same 12 records are prepared for a second pilot. Mapbox v6 Structured Input is preferred when the historical source can be safely decomposed. Requests use `country=NG`, expected `region`, explicit source-derived `place` where available, `autocomplete=false`, `permanent=true`, and compact candidate review. Mapbox documents that Structured Input drops `q` and accepts typed components such as address_line1/address_number/street/place/region/country. Where decomposition is unsafe, the script retains a normalized free-text query with strict locality validation.
+
+No address number is fabricated and operator/business names are not inserted into street fields. Repeated geographic tokens are removed from free-text fallback (for example Lagos/Lagos or Enugu/Enugu).
+
+## Candidate clustering
+For ambiguity review only, near-identical provider candidates may form one cluster when they share normalized street/road identity, match the expected state, have compatible required locality context, and are within **100 metres**. Clustering can suppress false ambiguity but can never upgrade road-level evidence to `candidate_exact`. fileciteturn1111file0L304-L327
+
+## Request and secret safety
+The second pilot remains offline until separately authorized. Plain execution and `--pilot` alone make zero external requests. External execution still requires **both** `--pilot --execute` plus server-only `MAPBOX_ACCESS_TOKEN`. The script refuses execution if `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` is present. Hard ceiling remains **24 billable searches**. No token is printed or persisted.
+
+The prepared second-pilot output path is `data/enrichment/mapbox-structured-geocoding-pilot-2026-09-24.json`; it is not created before execution. No station outside the original 12 is eligible. fileciteturn1111file0L352-L374
 
 ## Offline verification
-`node scripts/test-geocode-station-locations-mapbox.mjs` covers v6 object-context parsing, region/place extraction, wrong-state rejection, missing-region fail-closed behavior, exact/high + rooftop/parcel/point exact eligibility, interpolated exclusion, medium/low exclusion, component-match contradiction, multi-candidate ambiguity, state-preserving distinct query variants, and token non-emission.
+`node scripts/test-geocode-station-locations-mapbox.mjs` verifies duplicate geographic-token removal; Chikun/Sabon Gari and Jimeta/Numan fail-closed cases; Agidingbi/Ikeja locality inconsistency; FCT/Borno rejection and FCT aliases; locality-supported approximate classification; missing-locality fail-closed behavior; conservative same-road clustering; no exact upgrade from clustering; structured `country=NG` and `permanent=true`; and token non-emission. Tests make no API request.
 
-External requests: **0**. Billable requests: **0**. No final provider-result artifact is created by this hardening step.
-
-## Acceptance gate
-The next gate is Mapbox account/server setup and then the separately authorized 12-record permanent pilot. No full 90-record geocoding, production write, station import or migration is authorized.
+## Current gate
+No second-pilot Mapbox request has been made in this hardening prompt. No remaining 78 stations were geocoded. No Supabase write, migration or station import is authorized. Product-lead authorization is required before executing the prepared second structured pilot.
