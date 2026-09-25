@@ -1,0 +1,38 @@
+name: CNGx 003F-3 ledger alignment
+on:
+  push:
+    branches:
+      - phase-1/cngx-controlled-publication-pilot
+permissions:
+  contents: write
+jobs:
+  align-and-verify:
+    if: github.event.head_commit.message == 'Run 003F-3 ledger alignment'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Align migration filename and references
+        run: |
+          git config user.name "earthocenergy"
+          git config user.email "earthocenergy@gmail.com"
+          git mv supabase/migrations/20260925165500_controlled_publication_publish_unpublish.sql supabase/migrations/20260925175405_controlled_publication_publish_unpublish.sql
+          grep -RIl --exclude='cngx-003f3-ledger-align.yml' '20260925165500_controlled_publication_publish_unpublish.sql' scripts docs package.json | xargs -r sed -i 's/20260925165500_controlled_publication_publish_unpublish.sql/20260925175405_controlled_publication_publish_unpublish.sql/g'
+          git rm .github/workflows/cngx-003f3-ledger-align.yml
+      - run: npm install
+      - run: npm run test:publication-pilot
+      - run: npm run test:public-discovery
+      - run: npm run test:publication-workflow
+      - run: npm run test:publication-manifest
+      - run: npm run test:directory-import
+      - run: npm run validate:directory-import
+      - run: npm run build
+      - name: Commit and push alignment
+        run: |
+          git add -A
+          git commit -m "Align controlled publication migration ledger"
+          git push origin HEAD:phase-1/cngx-controlled-publication-pilot
