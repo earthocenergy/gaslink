@@ -1,6 +1,8 @@
 -- CNGx controlled official-directory publication foundation.
--- Prepared for later application; this migration is NOT applied by 003F-1.
+-- Prepared for later application; this migration remains UNAPPLIED during 003F-2.
 -- Publication remains independent from registration approval, verification, coordinates and operational freshness.
+-- The first controlled publication pilot is temporarily restricted to exactly two frozen official-directory source references.
+-- Applying this migration executes no station or review-audit DML; mutations below run only when an authorized RPC is called later.
 
 create or replace function public.admin_review_station_publication(
   p_station_id uuid,
@@ -36,6 +38,7 @@ begin
     raise exception 'Review notes must be 2000 characters or fewer';
   end if;
 
+  -- All state preconditions are evaluated from the row value read under this lock.
   select publication_status
     into v_previous_status
   from public.stations
@@ -93,6 +96,7 @@ set search_path = public, pg_temp
 as $$
 declare
   v_previous_status text;
+  v_record_source_reference text;
   v_notes text;
 begin
   if auth.uid() is null then
@@ -113,8 +117,10 @@ begin
     raise exception 'Publication notes must be 2000 characters or fewer';
   end if;
 
-  select publication_status
-    into v_previous_status
+  -- Lock first and then evaluate BOTH pilot authorization and publication state.
+  -- Concurrent calls therefore cannot trust or act on stale pre-lock state.
+  select publication_status, record_source_reference
+    into v_previous_status, v_record_source_reference
   from public.stations
   where id = p_station_id
     and record_source_type = 'official_directory'
@@ -122,6 +128,13 @@ begin
 
   if not found then
     raise exception 'Official-directory station not found';
+  end if;
+
+  if v_record_source_reference not in (
+    'picng-7acdd2023622ddc15506e499',
+    'picng-8156d44c6cd771ead33e9f0d'
+  ) then
+    raise exception 'Station is not authorized for the controlled publication pilot.';
   end if;
 
   if v_previous_status <> 'eligible' then
@@ -175,6 +188,8 @@ begin
     raise exception 'Unpublish notes must be 2000 characters or fewer';
   end if;
 
+  -- Unpublish is a safety rollback for ANY published official-directory row.
+  -- Do not apply the temporary publication-pilot allowlist to this function.
   select publication_status
     into v_previous_status
   from public.stations
