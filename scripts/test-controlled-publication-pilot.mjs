@@ -30,15 +30,17 @@ function check(label,fn){fn();passed++;console.log(`PASS ${passed}: ${label}`);}
 const publish=section("create or replace function public.admin_publish_station","create or replace function public.admin_unpublish_station");
 const unpublish=section("create or replace function public.admin_unpublish_station",null);
 const review=section("create or replace function public.admin_review_station_publication","create or replace function public.admin_publish_station");
+const publishMutation=publish.slice(publish.indexOf("update public.stations"),publish.indexOf("insert into public.station_publication_reviews"));
+const unpublishMutation=unpublish.slice(unpublish.indexOf("update public.stations"),unpublish.indexOf("insert into public.station_publication_reviews"));
 const pilotRefs=manifest.entries.map(x=>x.record_source_reference).sort();
 
 check("unreviewed cannot publish",()=>assert.match(publish,/v_previous_status <> 'eligible'/));
 check("withheld cannot publish",()=>assert.match(publish,/Only eligible official-directory stations can be published/));
-check("eligible can publish",()=>assert.match(publish,/set publication_status = 'published'/));
+check("eligible can publish",()=>assert.match(publishMutation,/set publication_status = 'published'/));
 check("published cannot publish again",()=>assert.match(publish,/v_previous_status <> 'eligible'/));
 check("published cannot be changed by review RPC",()=>assert.match(review,/if v_previous_status = 'published'[\s\S]*Published stations must be unpublished before changing review state/));
 check("published can unpublish",()=>assert.match(unpublish,/v_previous_status <> 'published'/));
-check("unpublish returns published to eligible",()=>assert.match(unpublish,/set publication_status = 'eligible'/));
+check("unpublish returns published to eligible",()=>assert.match(unpublishMutation,/set publication_status = 'eligible'/));
 check("unpublish requires reason",()=>assert.match(unpublish,/if v_notes is null[\s\S]*An unpublish reason is required/));
 check("publish requires note",()=>assert.match(publish,/if v_notes is null[\s\S]*A publication note is required/));
 check("publish and unpublish enforce 2000-character note maximum",()=>{assert.match(publish,/char_length\(v_notes\) > 2000/);assert.match(unpublish,/char_length\(v_notes\) > 2000/)});
@@ -47,10 +49,11 @@ check("anon cannot publish or unpublish",()=>{assert.match(migration,/revoke all
 check("PUBLIC cannot execute publish or unpublish",()=>{assert.match(migration,/revoke all on function public\.admin_publish_station/);assert.match(migration,/revoke all on function public\.admin_unpublish_station/)});
 check("authenticated is the only granted caller role",()=>{assert.match(migration,/grant execute on function public\.admin_publish_station\(uuid, text\) to authenticated/);assert.match(migration,/grant execute on function public\.admin_unpublish_station\(uuid, text\) to authenticated/)});
 check("non-directory station cannot publish",()=>assert.match(publish,/record_source_type = 'official_directory'/));
-check("publish changes no registration field",()=>assert.equal(/set[\s\S]{0,160}registration_status/i.test(publish),false));
-check("publish changes no verification field",()=>assert.equal(/set[\s\S]{0,160}is_verified/i.test(publish),false));
-check("publish changes no operational fields",()=>{for(const field of ["status =","price_per_scm","queue_minutes","open_now","last_verified_at"])assert.equal(publish.includes(field),false)});
-check("publish changes no coordinate or provenance fields",()=>{for(const field of ["latitude =","longitude =","location =","location_precision =","location_source_type =","record_source_type ="])assert.equal(/set[\s\S]{0,180}/.test(publish)&&publish.includes(field)&&field!=="record_source_type =",false)});
+check("publish changes no registration field",()=>assert.equal(/\bregistration_status\s*=/.test(publishMutation),false));
+check("publish changes no verification field",()=>assert.equal(/\bis_verified\s*=/.test(publishMutation),false));
+check("publish changes no operational fields",()=>{for(const field of ["status","price_per_scm","queue_minutes","open_now","last_verified_at"])assert.equal(new RegExp(`\\b${field}\\s*=`).test(publishMutation),false)});
+check("publish changes no coordinate or provenance fields",()=>{for(const field of ["latitude","longitude","location","location_precision","location_source_type","location_source_name","record_source_type","record_source_name","record_source_reference"])assert.equal(new RegExp(`\\b${field}\\s*=`).test(publishMutation),false)});
+check("unpublish changes only publication fields",()=>{for(const field of ["registration_status","is_verified","claimed_by","submitted_by","last_verified_at","status","price_per_scm","queue_minutes","open_now","latitude","longitude","location","location_precision","location_source_type","record_source_type"])assert.equal(new RegExp(`\\b${field}\\s*=`).test(unpublishMutation),false)});
 check("publish appends exactly one audit insert path",()=>assert.equal((publish.match(/insert into public\.station_publication_reviews/g)||[]).length,1));
 check("publish audit is eligible to published",()=>assert.match(publish,/p_station_id, 'eligible', 'published', auth\.uid\(\), v_notes/));
 check("unpublish appends exactly one audit insert path",()=>assert.equal((unpublish.match(/insert into public\.station_publication_reviews/g)||[]).length,1));
