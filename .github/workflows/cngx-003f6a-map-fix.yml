@@ -1,0 +1,72 @@
+name: CNGx 003F-6A map fix QA
+on:
+  push:
+    branches:
+      - phase-1/cngx-controlled-publication-pilot
+permissions:
+  contents: write
+jobs:
+  patch-and-qa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Replace fixed station-map CSS with coordinate-safe layout
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          path = Path("app/globals.css")
+          css = path.read_text()
+          map_block = """.stationMap{position:sticky;top:96px;border-radius:22px;overflow:hidden;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);display:grid;grid-template-rows:auto minmax(420px,1fr) auto;align-self:start}.mapHeader{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;gap:16px;background:#fff}.mapHeader h3{margin:0 0 6px;font-size:20px}.mapHeader p{margin:0;color:var(--muted);line-height:1.45;font-size:13px;max-width:520px}.mapLegend{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.mapLegend span{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap}.mapLegendMarker{width:23px;height:23px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:900}.mapLegendExact{background:var(--green);color:#fff}.mapLegendApproximate{background:#fff7df;color:#805900;border:2px solid var(--amber);box-shadow:0 0 0 4px rgba(242,184,75,.15)}.mapPlot{position:relative;min-height:500px;overflow:hidden;background:radial-gradient(circle at 30% 25%,#d7eee5 0 4%,transparent 5%),radial-gradient(circle at 70% 60%,#bfe0d3 0 3%,transparent 4%),linear-gradient(145deg,#e7eee9,#d8e5df)}.mapGrid{position:absolute;inset:0;background-image:linear-gradient(rgba(24,49,42,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(24,49,42,.06) 1px,transparent 1px);background-size:38px 38px}.mapPin{position:absolute;width:32px;height:32px;border-radius:50%;transform:translate(-50%,-100%);display:grid;place-items:center;z-index:2;font-weight:900}.mapPin span{color:inherit;font-weight:900;line-height:1}.mapPinExact{background:var(--green);color:#fff;box-shadow:0 8px 20px rgba(11,128,100,.25)}.mapPinApproximate{background:#fff7df;color:#805900;border:2px solid var(--amber);box-shadow:0 0 0 9px rgba(242,184,75,.16),0 8px 20px rgba(134,92,0,.16)}.mapEmptyState{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);max-width:330px;text-align:center;background:rgba(255,255,255,.92);border:1px solid rgba(217,225,220,.95);border-radius:15px;padding:16px;color:var(--muted);font-size:13px;line-height:1.45}.mapCaption{border-top:1px solid var(--line);padding:15px 20px;background:#fff}.mapCaption p{margin:0;color:var(--muted);font-size:12px;line-height:1.45}.mapCaption p+p{margin-top:6px}"""
+
+          css, count = re.subn(r"\.stationMap\{.*?\.networkIntro\{", map_block + ".networkIntro{", css, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit(f"Expected one base station-map block, replaced {count}")
+
+          old_900 = ".stationMap{position:relative;top:0;height:360px;order:-1}"
+          new_900 = ".stationMap{position:relative;top:0;order:-1}.mapPlot{min-height:360px}"
+          if old_900 not in css:
+              raise SystemExit("Expected 900px stationMap rule not found")
+          css = css.replace(old_900, new_900, 1)
+
+          old_760 = ".stationMap{height:300px}"
+          new_760 = ".mapPlot{min-height:300px}.mapHeader{align-items:flex-start;flex-direction:column}.mapLegend{justify-content:flex-start}"
+          if old_760 not in css:
+              raise SystemExit("Expected 760px stationMap rule not found")
+          css = css.replace(old_760, new_760, 1)
+
+          old_480 = ".stationMap{height:260px}.mapOverlay{left:12px;right:12px;bottom:12px}"
+          new_480 = ".mapPlot{min-height:260px}.mapHeader{padding:15px}.mapCaption{padding:13px 15px}"
+          if old_480 not in css:
+              raise SystemExit("Expected 480px stationMap/mapOverlay rules not found")
+          css = css.replace(old_480, new_480, 1)
+
+          forbidden = [".mapPin.p1{", ".mapPin.p2{", ".mapPin.p3{", ".mapOverlay{"]
+          for token in forbidden:
+              if token in css:
+                  raise SystemExit(f"Forbidden static map CSS remains: {token}")
+          path.write_text(css)
+      - run: npm install
+      - run: npm run test:station-map
+      - run: npm run test:publication-pilot
+      - run: npm run test:public-discovery
+      - run: npm run test:publication-workflow
+      - run: npm run test:publication-manifest
+      - run: npm run test:directory-import
+      - run: npm run validate:directory-import
+      - run: npm run build
+      - name: Commit coordinate-safe CSS and remove temporary QA workflow
+        run: |
+          git config user.name "earthocenergy"
+          git config user.email "earthocenergy@gmail.com"
+          git rm .github/workflows/cngx-003f6a-map-fix.yml
+          git add app/globals.css
+          git diff --cached --check
+          git commit -m "Fix coordinate-true Nigeria station overview"
+          git push origin HEAD:phase-1/cngx-controlled-publication-pilot
