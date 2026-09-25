@@ -7,7 +7,7 @@ import {fileURLToPath} from "node:url";
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const read=p=>fs.readFileSync(path.join(root,p),"utf8");
-const migrationPath="supabase/migrations/20260925165500_controlled_publication_publish_unpublish.sql";
+const migrationPath="supabase/migrations/20260925175405_controlled_publication_publish_unpublish.sql";
 const migration=read(migrationPath);
 const ui=read("app/admin/stations/publication/page.tsx");
 const doctrine=read("docs/controlled-publication-pilot.md");

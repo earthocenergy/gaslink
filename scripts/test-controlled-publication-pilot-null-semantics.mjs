@@ -6,7 +6,7 @@ import {fileURLToPath} from "node:url";
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const read=p=>fs.readFileSync(path.join(root,p),"utf8");
-const migration=read("supabase/migrations/20260925165500_controlled_publication_publish_unpublish.sql");
+const migration=read("supabase/migrations/20260925175405_controlled_publication_publish_unpublish.sql");
 const ui=read("app/admin/stations/publication/page.tsx");
 const manifest=JSON.parse(read("data/enrichment/cngx-publication-pilot-2026-09-25.json"));
 
