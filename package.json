@@ -5,7 +5,7 @@
   "scripts":{
     "dev":"next dev",
     "build:publication-manifest":"node scripts/build-directory-publication-review.mjs",
-    "test:publication-pilot":"node scripts/test-controlled-publication-pilot.mjs",
+    "test:publication-pilot":"node scripts/test-controlled-publication-pilot.mjs && node scripts/test-controlled-publication-pilot-null-semantics.mjs",
     "test:public-discovery":"node scripts/test-public-discovery-visibility.mjs",
     "test:publication-workflow":"node scripts/test-station-publication-workflow.mjs",
     "test:publication-manifest":"node scripts/test-directory-publication-review.mjs",
