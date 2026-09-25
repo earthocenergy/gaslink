@@ -9,7 +9,7 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const read=p=>fs.readFileSync(path.join(root,p),"utf8");
 const foundation=read("supabase/migrations/20260924192838_station_publication_foundation.sql");
 const adminMigration=read("supabase/migrations/20260924192910_station_publication_admin_review.sql");
-const sameStateMigration=read("supabase/migrations/20260925142000_station_publication_same_state_guard.sql");
+const sameStateMigration=read("supabase/migrations/20260925133006_station_publication_same_state_guard.sql");
 const adminPage=read("app/admin/page.tsx");
 const reviewPage=read("app/admin/stations/publication/page.tsx");
 const publicationDocs=read("docs/station-publication-model.md");
