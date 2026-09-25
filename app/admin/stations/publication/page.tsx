@@ -4,6 +4,7 @@ import {useEffect,useMemo,useRef,useState} from "react";
 import Link from "next/link";
 import BackButton from "@/components/BackButton";
 import {createClient} from "@/lib/supabase/client";
+import pilotManifest from "@/data/enrichment/cngx-publication-pilot-2026-09-25.json";
 import {BookOpenCheck,MapPin,ShieldCheck} from "lucide-react";
 
 type PublicationStatus="unreviewed"|"eligible"|"published"|"withheld";
@@ -16,11 +17,17 @@ type StationRow={
 };
 type ReviewRow={previous_status:string;new_status:string;created_at:string;notes:string|null};
 const PAGE_SIZE=12;
+const PILOT_SOURCE_REFERENCES=new Set<string>(pilotManifest.entries.map(entry=>entry.record_source_reference));
 
 function isMapped(row:StationRow){return row.latitude!==null&&row.longitude!==null;}
+function isControlledPilot(row:Pick<StationRow,"record_source_reference">){return row.record_source_reference!==null&&PILOT_SOURCE_REFERENCES.has(row.record_source_reference);}
 function schemaUnavailable(error:any){
   const message=String(error?.message||"").toLowerCase();
   return error?.code==="42703"||error?.code==="PGRST204"||message.includes("publication_status")||message.includes("schema cache");
+}
+function publicationActionSchemaUnavailable(error:any){
+  const message=String(error?.message||"").toLowerCase();
+  return error?.code==="PGRST202"||message.includes("admin_publish_station")||message.includes("admin_unpublish_station")||message.includes("could not find the function")||message.includes("schema cache");
 }
 function safeDatabaseMessage(error:any,fallback:string){
   return String(error?.message||fallback)
@@ -33,7 +40,29 @@ function safeHistoryError(error:any){return safeDatabaseMessage(error,"Unable to
 function safeReviewError(error:any){
   const message=String(error?.message||"");
   if(message.includes("Station is already in the requested publication state."))return "This station is already in the requested publication state.";
-  return safeDatabaseMessage(error,"Unable to update publication review.");
+  if(message.includes("Published stations must be unpublished before changing review state."))return "Published stations must be unpublished before changing review state.";
+  if(message.includes("A reason is required when withholding a station"))return "A reason is required when withholding a station.";
+  if(message.includes("Review notes must be 2000 characters or fewer"))return "Review notes must be 2000 characters or fewer.";
+  if(message.includes("Authentication required"))return "Authentication required.";
+  if(message.includes("Admin only"))return "Admin access required.";
+  if(message.includes("Official-directory station not found"))return "Official-directory station not found.";
+  if(message.includes("Invalid publication review decision"))return "Invalid publication review decision.";
+  return "Unable to update publication review.";
+}
+function safePublicationActionError(error:any,fallback:string){
+  const message=String(error?.message||"");
+  if(publicationActionSchemaUnavailable(error))return "Publication action schema not applied yet.";
+  if(message.includes("Station is not authorized for the controlled publication pilot."))return "Not authorized for current publication pilot.";
+  if(message.includes("Only eligible official-directory stations can be published."))return "Only eligible official-directory stations can be published.";
+  if(message.includes("Only published official-directory stations can be unpublished."))return "Only published official-directory stations can be unpublished.";
+  if(message.includes("A publication note is required"))return "A publication note is required.";
+  if(message.includes("An unpublish reason is required"))return "An unpublish reason is required.";
+  if(message.includes("Publication notes must be 2000 characters or fewer"))return "Publication notes must be 2000 characters or fewer.";
+  if(message.includes("Unpublish notes must be 2000 characters or fewer"))return "Unpublish notes must be 2000 characters or fewer.";
+  if(message.includes("Authentication required"))return "Authentication required.";
+  if(message.includes("Admin only"))return "Admin access required.";
+  if(message.includes("Official-directory station not found"))return "Official-directory station not found.";
+  return fallback;
 }
 function safeDomId(value:string){return value.replace(/[^A-Za-z0-9_-]/g,"-").replace(/-+/g,"-");}
 
@@ -62,7 +91,7 @@ export default function PublicationReviewPage(){
     const {data,error:qError}=await db.from("stations").select("id,name,operator_name,address,city,state,record_source_type,record_source_name,record_source_reference,latitude,longitude,location_precision,location_source_type,location_source_name,publication_status,publication_reviewed_at,is_verified,status").eq("record_source_type","official_directory").order("state",{ascending:true}).order("name",{ascending:true});
     if(qError){
       if(schemaUnavailable(qError)){setSchemaReady(false);setRows([]);setError("");return;}
-      setSchemaReady(null);setRows([]);setError(qError.message);return;
+      setSchemaReady(null);setRows([]);setError("Unable to load publication review.");return;
     }
     setSchemaReady(true);setRows((data||[]) as StationRow[]);setError("");
   }
@@ -91,6 +120,7 @@ export default function PublicationReviewPage(){
   const summary=useMemo(()=>({
     unreviewed:rows.filter(x=>x.publication_status==="unreviewed").length,
     eligible:rows.filter(x=>x.publication_status==="eligible").length,
+    published:rows.filter(x=>x.publication_status==="published").length,
     withheld:rows.filter(x=>x.publication_status==="withheld").length,
     mapped:rows.filter(isMapped).length,
     unmapped:rows.filter(x=>!isMapped(x)).length
@@ -137,7 +167,22 @@ export default function PublicationReviewPage(){
     void loadHistory(station);
   }
 
+  function beginStationMutation(stationId:string){
+    if(pendingMutationRef.current.has(stationId))return false;
+    pendingMutationRef.current.add(stationId);
+    setMutatingStationIds(previous=>{const next=new Set(previous);next.add(stationId);return next;});
+    return true;
+  }
+  function endStationMutation(stationId:string){
+    pendingMutationRef.current.delete(stationId);
+    setMutatingStationIds(previous=>{const next=new Set(previous);next.delete(stationId);return next;});
+  }
+
   async function review(station:StationRow,decision:ReviewDecision){
+    if(station.publication_status==="published"){
+      setError("Published stations must be unpublished before changing review state.");
+      return;
+    }
     if(station.publication_status===decision||pendingMutationRef.current.has(station.id))return;
     setMessage("");setError("");
     let notes:string|null=null;
@@ -153,9 +198,7 @@ export default function PublicationReviewPage(){
     }
     const label=decision==="eligible"?"mark eligible":decision==="withheld"?"withhold":"return to unreviewed";
     if(!window.confirm(`${label} — ${station.name} (${station.record_source_reference||"no source reference"})?`))return;
-
-    pendingMutationRef.current.add(station.id);
-    setMutatingStationIds(previous=>{const next=new Set(previous);next.add(station.id);return next;});
+    if(!beginStationMutation(station.id))return;
     const historyWasOpen=selectedId===station.id;
     try{
       const {error:rError}=await createClient().rpc("admin_review_station_publication",{p_station_id:station.id,p_decision:decision,p_notes:notes});
@@ -164,8 +207,68 @@ export default function PublicationReviewPage(){
       await loadQueue();
       if(historyWasOpen)await loadHistory({...station,publication_status:decision});
     }finally{
-      pendingMutationRef.current.delete(station.id);
-      setMutatingStationIds(previous=>{const next=new Set(previous);next.delete(station.id);return next;});
+      endStationMutation(station.id);
+    }
+  }
+
+  async function publishStation(station:StationRow){
+    if(pendingMutationRef.current.has(station.id))return;
+    setMessage("");setError("");
+    if(station.publication_status!=="eligible"){
+      setError("Only eligible official-directory stations can be published.");
+      return;
+    }
+    if(!isControlledPilot(station)){
+      setError("Not authorized for current publication pilot.");
+      return;
+    }
+    const supplied=window.prompt("Publication note (required):","");
+    if(supplied===null)return;
+    const notes=supplied.trim();
+    if(!notes){setError("A publication note is required.");return;}
+    if(notes.length>2000){setError("Publication notes must be 2000 characters or fewer.");return;}
+    const verificationLabel=station.is_verified?"CNGx verification recorded":"Not CNGx verified";
+    const operationalLabel=station.status==="unknown"?"Operational status unknown":`Operational status: ${station.status}`;
+    const confirmation=window.prompt(
+      `Publishing makes this directory record visible in CNGx. It does not verify the station or confirm live operating conditions.\n\nStation: ${station.name}\nSource reference: ${station.record_source_reference||"not stated"}\nLocation precision: ${station.location_precision}\nVerification: ${verificationLabel}\nOperations: ${operationalLabel}\n\nType PUBLISH to confirm:`,
+      ""
+    );
+    if(confirmation!=="PUBLISH"){
+      if(confirmation!==null)setError("Publication cancelled. Type PUBLISH exactly to confirm.");
+      return;
+    }
+    if(!beginStationMutation(station.id))return;
+    const historyWasOpen=selectedId===station.id;
+    try{
+      const {error:pError}=await createClient().rpc("admin_publish_station",{p_station_id:station.id,p_notes:notes});
+      if(pError){setError(safePublicationActionError(pError,"Unable to publish this directory record."));return;}
+      setMessage(`${station.name}: published to CNGx public discovery.`);
+      await loadQueue();
+      if(historyWasOpen)await loadHistory({...station,publication_status:"published"});
+    }finally{
+      endStationMutation(station.id);
+    }
+  }
+
+  async function unpublishStation(station:StationRow){
+    if(station.publication_status!=="published"||pendingMutationRef.current.has(station.id))return;
+    setMessage("");setError("");
+    const supplied=window.prompt("Reason for unpublishing this directory record (required):","");
+    if(supplied===null)return;
+    const notes=supplied.trim();
+    if(!notes){setError("An unpublish reason is required.");return;}
+    if(notes.length>2000){setError("Unpublish notes must be 2000 characters or fewer.");return;}
+    if(!window.confirm(`Unpublishing removes this directory record from public CNGx discovery and returns it to eligible review state.\n\n${station.name}\n${station.record_source_reference||"No source reference"}\n\nContinue?`))return;
+    if(!beginStationMutation(station.id))return;
+    const historyWasOpen=selectedId===station.id;
+    try{
+      const {error:uError}=await createClient().rpc("admin_unpublish_station",{p_station_id:station.id,p_notes:notes});
+      if(uError){setError(safePublicationActionError(uError,"Unable to unpublish this directory record."));return;}
+      setMessage(`${station.name}: removed from public discovery and returned to eligible review state.`);
+      await loadQueue();
+      if(historyWasOpen)await loadHistory({...station,publication_status:"eligible"});
+    }finally{
+      endStationMutation(station.id);
     }
   }
 
@@ -180,36 +283,42 @@ export default function PublicationReviewPage(){
     {schemaReady===null&&error&&<section className="panel" style={{maxWidth:980,margin:"24px auto"}}><h2>Unable to load publication review</h2><p className="muted">{error}</p></section>}
 
     {schemaReady===true&&<section className="adminWrap adminV2">
-      <div className="adminStats adminStatsV2"><div><b>{summary.unreviewed}</b><span>Unreviewed</span></div><div><b>{summary.eligible}</b><span>Eligible</span></div><div><b>{summary.withheld}</b><span>Withheld</span></div><div><b>{summary.mapped}</b><span>Mapped</span></div><div><b>{summary.unmapped}</b><span>Unmapped</span></div></div>
+      <div className="adminStats adminStatsV2"><div><b>{summary.unreviewed}</b><span>Unreviewed</span></div><div><b>{summary.eligible}</b><span>Eligible</span></div><div><b>{summary.published}</b><span>Published</span></div><div><b>{summary.withheld}</b><span>Withheld</span></div><div><b>{summary.mapped}</b><span>Mapped</span></div><div><b>{summary.unmapped}</b><span>Unmapped</span></div></div>
       <div className="panel" style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr",gap:10,alignItems:"end"}}>
         <label>Search<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Operator, station, address or source reference"/></label>
-        <label>Publication status<select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}><option value="all">All</option><option value="unreviewed">Unreviewed</option><option value="eligible">Eligible</option><option value="withheld">Withheld</option></select></label>
+        <label>Publication status<select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}><option value="all">All</option><option value="unreviewed">Unreviewed</option><option value="eligible">Eligible</option><option value="published">Published</option><option value="withheld">Withheld</option></select></label>
         <label>State<select value={stateFilter} onChange={e=>setStateFilter(e.target.value)}><option value="all">All states</option>{states.map(x=><option key={x} value={x}>{x}</option>)}</select></label>
         <label>Map readiness<select value={mapFilter} onChange={e=>setMapFilter(e.target.value)}><option value="all">All</option><option value="mapped">Mapped</option><option value="unmapped">Unmapped</option></select></label>
       </div>
+      <p className="muted">Publishing is an explicit second administrative decision after eligibility. During this controlled pilot, only the two manifest-authorized records may use Publish; normal review remains available for other directory records. If the controlled publication action schema is not yet applied, publish/unpublish calls fail closed with no direct table-update fallback.</p>
       {message&&<p className="panel">{message}</p>}{error&&<p className="panel" role="alert">{error}</p>}
       <p className="muted">Showing {visible.length} of {filtered.length} matching records · page {page} of {pages}</p>
       <div className="adminList">{visible.map(station=>{
         const mapped=isMapped(station);
+        const pilotAuthorized=isControlledPilot(station);
         const expanded=selectedId===station.id;
         const historyRegionId=`review-history-${safeDomId(station.record_source_reference||station.name)}`;
         const mutationPending=mutatingStationIds.has(station.id);
         const eligibleCurrent=station.publication_status==="eligible";
+        const publishedCurrent=station.publication_status==="published";
         const withheldCurrent=station.publication_status==="withheld";
         const unreviewedCurrent=station.publication_status==="unreviewed";
         return <div key={station.id}>
-          <b>{station.name}</b>
+          <b>{station.name}</b>{pilotAuthorized&&<span style={{marginLeft:8,fontSize:12,fontWeight:700}}>Controlled pilot</span>}
           <span>{station.operator_name||"Operator not stated"} · {station.address}{station.city?`, ${station.city}`:""}{station.state?`, ${station.state}`:""}</span>
           <p><strong>Listed in official directory</strong> · {station.record_source_name||"Pi-CNG directory"} · {station.record_source_reference||"No source reference"}</p>
           <p>{station.is_verified?"CNGx verification recorded":"Not CNGx verified"} · {station.status==="unknown"?"Operational status unknown":`Operational status: ${station.status}`}</p>
           <p><MapPin size={14} style={{verticalAlign:"middle"}}/> {mapped?(station.location_precision==="approximate"?"Approximate location":`Location precision: ${station.location_precision}`):"No trusted map location yet"}{mapped&&station.location_source_name?` · ${station.location_source_name}`:""}</p>
           <p>Publication review: <b>{station.publication_status}</b></p>
           <p>
-            <button className="primary" disabled={mutationPending||eligibleCurrent} aria-disabled={mutationPending||eligibleCurrent} onClick={()=>review(station,"eligible")}>Mark eligible</button>{" "}
-            <button className="secondary" disabled={mutationPending||withheldCurrent} aria-disabled={mutationPending||withheldCurrent} onClick={()=>review(station,"withheld")}>Withhold</button>{" "}
-            <button className="secondary" disabled={mutationPending||unreviewedCurrent} aria-disabled={mutationPending||unreviewedCurrent} onClick={()=>review(station,"unreviewed")}>Return to unreviewed</button>{" "}
+            <button className="primary" disabled={mutationPending||eligibleCurrent||publishedCurrent} aria-disabled={mutationPending||eligibleCurrent||publishedCurrent} onClick={()=>review(station,"eligible")}>Mark eligible</button>{" "}
+            <button className="secondary" disabled={mutationPending||withheldCurrent||publishedCurrent} aria-disabled={mutationPending||withheldCurrent||publishedCurrent} onClick={()=>review(station,"withheld")}>Withhold</button>{" "}
+            <button className="secondary" disabled={mutationPending||unreviewedCurrent||publishedCurrent} aria-disabled={mutationPending||unreviewedCurrent||publishedCurrent} onClick={()=>review(station,"unreviewed")}>Return to unreviewed</button>{" "}
+            <button className="primary" disabled={mutationPending||!eligibleCurrent||!pilotAuthorized} aria-disabled={mutationPending||!eligibleCurrent||!pilotAuthorized} onClick={()=>publishStation(station)}>Publish</button>{" "}
+            <button className="secondary" disabled={mutationPending||!publishedCurrent} aria-disabled={mutationPending||!publishedCurrent} onClick={()=>unpublishStation(station)}>Unpublish</button>{" "}
             <button className="secondary" aria-expanded={expanded} aria-controls={historyRegionId} disabled={expanded&&historyLoading} onClick={()=>toggleHistory(station)}>{expanded?"Hide history":"Review history"}</button>
             {mutationPending&&<span role="status" aria-live="polite" style={{marginLeft:8}}>Updating…</span>}
+            {eligibleCurrent&&!pilotAuthorized&&<span className="muted" style={{display:"inline-block",marginLeft:8}}>Not authorized for current publication pilot</span>}
           </p>
           {expanded&&<section id={historyRegionId} role="region" aria-label={`Review history for ${station.name}`} aria-live="polite" className="panel" style={{marginTop:12}}>
             {historyLoading&&<p className="muted">Loading review history…</p>}
