@@ -1,0 +1,34 @@
+{
+  "generated_for": "CNGx controlled official-directory publication pilot",
+  "date": "2026-09-25",
+  "entries": [
+    {
+      "record_source_reference": "picng-7acdd2023622ddc15506e499",
+      "station_name": "NIPCO Gas Limited — KU Plaza, Benin Sapele Rd, Opposite PZ Junction, Benin City",
+      "operator_name": "NIPCO Gas Limited",
+      "state": "Edo",
+      "pilot_type": "mapped_approximate",
+      "expected_location_precision": "approximate",
+      "expected_public_list_behavior": "visible_after_publication",
+      "expected_map_behavior": "eligible",
+      "expected_directions_behavior": "coordinate_based",
+      "expected_verification_label": "Not CNGx verified",
+      "expected_operational_label": "Operational status unknown",
+      "expected_pre_publication_status": "unreviewed"
+    },
+    {
+      "record_source_reference": "picng-8156d44c6cd771ead33e9f0d",
+      "station_name": "Tetracore — Benin City Bypass, Uwusan",
+      "operator_name": "Tetracore",
+      "state": "Edo",
+      "pilot_type": "text_only_unconfirmed",
+      "expected_location_precision": "unconfirmed",
+      "expected_public_list_behavior": "visible_after_publication",
+      "expected_map_behavior": "ineligible",
+      "expected_directions_behavior": "address_based",
+      "expected_verification_label": "Not CNGx verified",
+      "expected_operational_label": "Operational status unknown",
+      "expected_pre_publication_status": "unreviewed"
+    }
+  ]
+}
