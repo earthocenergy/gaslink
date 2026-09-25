@@ -130,10 +130,11 @@ begin
     raise exception 'Official-directory station not found';
   end if;
 
-  if v_record_source_reference not in (
-    'picng-7acdd2023622ddc15506e499',
-    'picng-8156d44c6cd771ead33e9f0d'
-  ) then
+  if v_record_source_reference is null
+     or v_record_source_reference not in (
+       'picng-7acdd2023622ddc15506e499',
+       'picng-8156d44c6cd771ead33e9f0d'
+     ) then
     raise exception 'Station is not authorized for the controlled publication pilot.';
   end if;
 
