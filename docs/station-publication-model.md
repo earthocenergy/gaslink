@@ -112,3 +112,25 @@ Once the schema is later applied, database publication state becomes authoritati
 003D-2 still does not alter public-read RLS or `nearby_stations`. A later explicit gate must decide how `publication_status='published'` integrates with anonymous station reads while preserving current approved non-directory behavior and coordinate-dependent discovery safety.
 
 No bulk publication is authorized by this model. The `published` state exists now only for legacy approved non-directory backfill and a future explicitly approved publication gate.
+
+## Publication review idempotency and audit policy
+
+Every publication-review audit event must represent an **actual publication-state transition**. Valid examples include:
+
+- `unreviewed → eligible`
+- `eligible → withheld`
+- `withheld → eligible`
+- `eligible → unreviewed`
+- `withheld → unreviewed`
+
+Same-state requests are not review events and must fail closed before any station mutation or audit insert:
+
+- `unreviewed → unreviewed` — not allowed
+- `eligible → eligible` — not allowed
+- `withheld → withheld` — not allowed
+
+The database guard is authoritative. The admin UI also disables the action that corresponds to the station's current publication state and prevents duplicate rapid submissions while a review mutation for that station is in flight.
+
+During 003D-3B runtime QA, before the idempotency guard existed, one `eligible → eligible` event was created while testing the workflow. That historical QA row is intentionally retained as an **append-only pre-idempotency-guard runtime-QA artifact**. It must not be deleted, rewritten or used as precedent for future audit behavior.
+
+`published` remains disallowed as an admin-review decision in this workflow.
