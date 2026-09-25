@@ -12,7 +12,7 @@ const home=read("app/page.tsx");
 const stations=read("app/stations/page.tsx");
 const trip=read("app/trip/page.tsx");
 const detail=read("app/stations/[id]/page.tsx");
-const migration=read("supabase/migrations/20260925140805_public_discovery_visibility_cutover.sql");
+const migration=read("supabase/migrations/20260925143953_public_discovery_visibility_cutover.sql");
 const publicPages=[home,stations,trip,detail];
 
 function visible(s){
