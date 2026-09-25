@@ -22,12 +22,18 @@ function schemaUnavailable(error:any){
   const message=String(error?.message||"").toLowerCase();
   return error?.code==="42703"||error?.code==="PGRST204"||message.includes("publication_status")||message.includes("schema cache");
 }
-function safeHistoryError(error:any){
-  return String(error?.message||"Unable to load review history.")
+function safeDatabaseMessage(error:any,fallback:string){
+  return String(error?.message||fallback)
     .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/gi,"[redacted id]")
     .replace(/\beyJ[A-Za-z0-9._-]+/g,"[redacted token]")
     .replace(/\bsb_(?:secret|publishable)_[A-Za-z0-9._-]+/gi,"[redacted credential]")
     .slice(0,300);
+}
+function safeHistoryError(error:any){return safeDatabaseMessage(error,"Unable to load review history.");}
+function safeReviewError(error:any){
+  const message=String(error?.message||"");
+  if(message.includes("Station is already in the requested publication state."))return "This station is already in the requested publication state.";
+  return safeDatabaseMessage(error,"Unable to update publication review.");
 }
 function safeDomId(value:string){return value.replace(/[^A-Za-z0-9_-]/g,"-").replace(/-+/g,"-");}
 
@@ -46,8 +52,10 @@ export default function PublicationReviewPage(){
   const [history,setHistory]=useState<ReviewRow[]>([]);
   const [historyError,setHistoryError]=useState("");
   const [historyLoading,setHistoryLoading]=useState(false);
+  const [mutatingStationIds,setMutatingStationIds]=useState<Set<string>>(()=>new Set());
   const historyRequestRef=useRef(0);
   const pendingHistoryRef=useRef(new Set<string>());
+  const pendingMutationRef=useRef(new Set<string>());
 
   async function loadQueue(){
     const db=createClient();
@@ -130,6 +138,7 @@ export default function PublicationReviewPage(){
   }
 
   async function review(station:StationRow,decision:ReviewDecision){
+    if(station.publication_status===decision||pendingMutationRef.current.has(station.id))return;
     setMessage("");setError("");
     let notes:string|null=null;
     if(decision==="withheld"){
@@ -144,11 +153,20 @@ export default function PublicationReviewPage(){
     }
     const label=decision==="eligible"?"mark eligible":decision==="withheld"?"withhold":"return to unreviewed";
     if(!window.confirm(`${label} — ${station.name} (${station.record_source_reference||"no source reference"})?`))return;
-    const {error:rError}=await createClient().rpc("admin_review_station_publication",{p_station_id:station.id,p_decision:decision,p_notes:notes});
-    if(rError){setError(rError.message);return;}
-    setMessage(`${station.name}: review status updated to ${decision}.`);
-    await loadQueue();
-    await loadHistory({...station,publication_status:decision});
+
+    pendingMutationRef.current.add(station.id);
+    setMutatingStationIds(previous=>{const next=new Set(previous);next.add(station.id);return next;});
+    const historyWasOpen=selectedId===station.id;
+    try{
+      const {error:rError}=await createClient().rpc("admin_review_station_publication",{p_station_id:station.id,p_decision:decision,p_notes:notes});
+      if(rError){setError(safeReviewError(rError));return;}
+      setMessage(`${station.name}: review status updated to ${decision}.`);
+      await loadQueue();
+      if(historyWasOpen)await loadHistory({...station,publication_status:decision});
+    }finally{
+      pendingMutationRef.current.delete(station.id);
+      setMutatingStationIds(previous=>{const next=new Set(previous);next.delete(station.id);return next;});
+    }
   }
 
   if(access===null)return <main className="panel">Checking Earthoc Admin access…</main>;
@@ -169,12 +187,16 @@ export default function PublicationReviewPage(){
         <label>State<select value={stateFilter} onChange={e=>setStateFilter(e.target.value)}><option value="all">All states</option>{states.map(x=><option key={x} value={x}>{x}</option>)}</select></label>
         <label>Map readiness<select value={mapFilter} onChange={e=>setMapFilter(e.target.value)}><option value="all">All</option><option value="mapped">Mapped</option><option value="unmapped">Unmapped</option></select></label>
       </div>
-      {message&&<p className="panel">{message}</p>}{error&&<p className="panel">{error}</p>}
+      {message&&<p className="panel">{message}</p>}{error&&<p className="panel" role="alert">{error}</p>}
       <p className="muted">Showing {visible.length} of {filtered.length} matching records · page {page} of {pages}</p>
       <div className="adminList">{visible.map(station=>{
         const mapped=isMapped(station);
         const expanded=selectedId===station.id;
         const historyRegionId=`review-history-${safeDomId(station.record_source_reference||station.name)}`;
+        const mutationPending=mutatingStationIds.has(station.id);
+        const eligibleCurrent=station.publication_status==="eligible";
+        const withheldCurrent=station.publication_status==="withheld";
+        const unreviewedCurrent=station.publication_status==="unreviewed";
         return <div key={station.id}>
           <b>{station.name}</b>
           <span>{station.operator_name||"Operator not stated"} · {station.address}{station.city?`, ${station.city}`:""}{station.state?`, ${station.state}`:""}</span>
@@ -182,7 +204,13 @@ export default function PublicationReviewPage(){
           <p>{station.is_verified?"CNGx verification recorded":"Not CNGx verified"} · {station.status==="unknown"?"Operational status unknown":`Operational status: ${station.status}`}</p>
           <p><MapPin size={14} style={{verticalAlign:"middle"}}/> {mapped?(station.location_precision==="approximate"?"Approximate location":`Location precision: ${station.location_precision}`):"No trusted map location yet"}{mapped&&station.location_source_name?` · ${station.location_source_name}`:""}</p>
           <p>Publication review: <b>{station.publication_status}</b></p>
-          <p><button className="primary" onClick={()=>review(station,"eligible")}>Mark eligible</button> <button className="secondary" onClick={()=>review(station,"withheld")}>Withhold</button> <button className="secondary" onClick={()=>review(station,"unreviewed")}>Return to unreviewed</button> <button className="secondary" aria-expanded={expanded} aria-controls={historyRegionId} disabled={expanded&&historyLoading} onClick={()=>toggleHistory(station)}>{expanded?"Hide history":"Review history"}</button></p>
+          <p>
+            <button className="primary" disabled={mutationPending||eligibleCurrent} aria-disabled={mutationPending||eligibleCurrent} onClick={()=>review(station,"eligible")}>Mark eligible</button>{" "}
+            <button className="secondary" disabled={mutationPending||withheldCurrent} aria-disabled={mutationPending||withheldCurrent} onClick={()=>review(station,"withheld")}>Withhold</button>{" "}
+            <button className="secondary" disabled={mutationPending||unreviewedCurrent} aria-disabled={mutationPending||unreviewedCurrent} onClick={()=>review(station,"unreviewed")}>Return to unreviewed</button>{" "}
+            <button className="secondary" aria-expanded={expanded} aria-controls={historyRegionId} disabled={expanded&&historyLoading} onClick={()=>toggleHistory(station)}>{expanded?"Hide history":"Review history"}</button>
+            {mutationPending&&<span role="status" aria-live="polite" style={{marginLeft:8}}>Updating…</span>}
+          </p>
           {expanded&&<section id={historyRegionId} role="region" aria-label={`Review history for ${station.name}`} aria-live="polite" className="panel" style={{marginTop:12}}>
             {historyLoading&&<p className="muted">Loading review history…</p>}
             {!historyLoading&&historyError&&<p role="alert">Unable to load review history: {historyError}</p>}
