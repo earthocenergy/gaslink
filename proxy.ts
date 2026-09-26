@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+const ADMIN_MFA_ENFORCEMENT = process.env.ADMIN_MFA_ENFORCEMENT ?? "enrolment";
 
 function safeReturnPath(request: NextRequest) {
   const value = `${request.nextUrl.pathname}${request.nextUrl.search}`;
@@ -10,15 +11,13 @@ function safeReturnPath(request: NextRequest) {
 }
 
 export async function proxy(request: NextRequest) {
-  if (!request.nextUrl.pathname.startsWith("/admin")) {
-    return NextResponse.next();
-  }
+  if (!request.nextUrl.pathname.startsWith("/admin")) return NextResponse.next();
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     return new NextResponse("Admin access is temporarily unavailable.", { status: 503 });
   }
 
-  let response = NextResponse.next({ request });
+  let response = NextResponse.next();
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_KEY, {
     cookies: {
       getAll() {
@@ -26,7 +25,7 @@ export async function proxy(request: NextRequest) {
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
+        response = NextResponse.next();
         cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
       },
     },
@@ -53,9 +52,18 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  if (ADMIN_MFA_ENFORCEMENT === "required") {
+    const { data: aal, error: aalError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aalError) return new NextResponse("Admin MFA verification is temporarily unavailable.", { status: 503 });
+    if (aal.currentLevel !== "aal2" && request.nextUrl.pathname !== "/admin/security") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/admin/security";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+  }
+
   return response;
 }
 
-export const config = {
-  matcher: ["/admin/:path*"],
-};
+export const config = { matcher: ["/admin/:path*"] };
