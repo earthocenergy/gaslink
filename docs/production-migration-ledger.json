@@ -1,0 +1,51 @@
+{
+  "capturedAt": "2026-09-26",
+  "projectRef": "knhrgugextsmisyxzdgc",
+  "head": "20260925175405",
+  "migrations": [
+    {"version":"20260920022817","name":"init_gaslink_phase0"},
+    {"version":"20260920031605","name":"secure_roles_and_operator_workflow"},
+    {"version":"20260920031643","name":"lock_internal_trigger_functions"},
+    {"version":"20260920033250","name":"allow_backend_role_administration"},
+    {"version":"20260920033941","name":"operator_station_update_policy"},
+    {"version":"20260920064019","name":"station_registration_and_freshness"},
+    {"version":"20260920100716","name":"marketplace_foundation"},
+    {"version":"20260920121326","name":"cng_services_foundation"},
+    {"version":"20260920123504","name":"gaslink_business_and_marketplace_review"},
+    {"version":"20260920200959","name":"gaslink_multi_roles_admin_ops"},
+    {"version":"20260920202547","name":"station_admin_moderation_and_freshness"},
+    {"version":"20260920203850","name":"role_activation_and_verified_role_sync"},
+    {"version":"20260920205321","name":"admin_business_and_equipment_controls"},
+    {"version":"20260920205715","name":"account_signup_profile_bootstrap"},
+    {"version":"20260920205821","name":"backfill_buyer_role"},
+    {"version":"20260920210920","name":"qa_controlled_test_dataset_v2"},
+    {"version":"20260920211729","name":"qa_visibility_policy_hardening"},
+    {"version":"20260920212050","name":"qa_station_report_visibility_guard"},
+    {"version":"20260921002609","name":"harden_rpc_execute_permissions"},
+    {"version":"20260921002900","name":"gate_verified_commercial_roles"},
+    {"version":"20260921002954","name":"qa_numeric_integrity_constraints"},
+    {"version":"20260921063158","name":"qa_performance_indexes_and_rls_cleanup"},
+    {"version":"20260921125805","name":"restrict_user_role_self_assignment"},
+    {"version":"20260922065101","name":"phase1_station_geospatial_foundation"},
+    {"version":"20260924165232","name":"grant_service_role_gis_usage"},
+    {"version":"20260924192838","name":"station_publication_foundation"},
+    {"version":"20260924192910","name":"station_publication_admin_review"},
+    {"version":"20260925133006","name":"station_publication_same_state_guard"},
+    {"version":"20260925143953","name":"public_discovery_visibility_cutover"},
+    {"version":"20260925175405","name":"controlled_publication_publish_unpublish"}
+  ],
+  "repositoryExactVersionMatches": [
+    "20260921125805",
+    "20260924165232",
+    "20260924192838",
+    "20260924192910",
+    "20260925133006",
+    "20260925143953",
+    "20260925175405"
+  ],
+  "knownLogicalVersionMismatches": [
+    {"repository":"0001_phase0.sql","production":"20260920022817_init_gaslink_phase0","strategy":"authoritative baseline replaces historical replay"},
+    {"repository":"20260921170000_phase1_station_geospatial_foundation.sql","production":"20260922065101_phase1_station_geospatial_foundation","strategy":"do not reapply; retain repository file as historical source and record production version"}
+  ],
+  "missingProductionSourceVersionCount": 23
+}
