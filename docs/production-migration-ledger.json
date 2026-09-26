@@ -1,7 +1,7 @@
 {
   "capturedAt": "2026-09-26",
   "projectRef": "knhrgugextsmisyxzdgc",
-  "head": "20260925175405",
+  "head": "20260926014037",
   "migrations": [
     {"version":"20260920022817","name":"init_gaslink_phase0"},
     {"version":"20260920031605","name":"secure_roles_and_operator_workflow"},
@@ -32,7 +32,8 @@
     {"version":"20260924192910","name":"station_publication_admin_review"},
     {"version":"20260925133006","name":"station_publication_same_state_guard"},
     {"version":"20260925143953","name":"public_discovery_visibility_cutover"},
-    {"version":"20260925175405","name":"controlled_publication_publish_unpublish"}
+    {"version":"20260925175405","name":"controlled_publication_publish_unpublish"},
+    {"version":"20260926014037","name":"foundation_performance_and_rpc_hardening"}
   ],
   "repositoryExactVersionMatches": [
     "20260921125805",
@@ -41,7 +42,8 @@
     "20260924192910",
     "20260925133006",
     "20260925143953",
-    "20260925175405"
+    "20260925175405",
+    "20260926014037"
   ],
   "knownLogicalVersionMismatches": [
     {"repository":"0001_phase0.sql","production":"20260920022817_init_gaslink_phase0","strategy":"authoritative baseline replaces historical replay"},
