@@ -4,6 +4,9 @@
   "private":true,
   "scripts":{
     "dev":"next dev",
+    "typecheck":"tsc --noEmit",
+    "check:migrations":"node scripts/check-migration-integrity.mjs",
+    "test:foundation":"node scripts/test-foundation-lock.mjs",
     "build:publication-manifest":"node scripts/build-directory-publication-review.mjs",
     "test:station-map":"node scripts/test-station-map-coordinate-integrity.mjs",
     "test:publication-pilot":"node scripts/test-controlled-publication-pilot.mjs && node scripts/test-controlled-publication-pilot-null-semantics.mjs",
