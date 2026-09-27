@@ -49,5 +49,20 @@
     {"repository":"0001_phase0.sql","production":"20260920022817_init_gaslink_phase0","strategy":"authoritative baseline replaces historical replay"},
     {"repository":"20260921170000_phase1_station_geospatial_foundation.sql","production":"20260922065101_phase1_station_geospatial_foundation","strategy":"do not reapply; retain repository file as historical source and record production version"}
   ],
-  "missingProductionSourceVersionCount": 23
+  "missingProductionSourceVersionCount": 23,
+  "lockedRepositorySources": [
+    {"file":"0001_phase0.sql","sha256":"2721a6e2f8d259dedc4c2a05d87513f5011bf43fdc93cd784f27f864bb2d84f0"},
+    {"file":"20260921125805_restrict_user_role_self_assignment.sql","sha256":"fda3f5511c3ef7ec9211b66a0e621abc5832d665a50f3a3f6eabe545abca98b9"},
+    {"file":"20260921170000_phase1_station_geospatial_foundation.sql","sha256":"d195115f6b2720afc57137a23c6b4206244eb67dacbcf392713a042520c9a9f6"},
+    {"file":"20260924165232_grant_service_role_gis_usage.sql","sha256":"65ed14e57ce1f4f566e4b070f9eea77ccda6465dcd72c3d7ae9a0aa0a96a9e19"},
+    {"file":"20260924192838_station_publication_foundation.sql","sha256":"1bd855454abff9e9dda9081b41345e3fed6f249159a4c4e2e9df4631a5c29caa"},
+    {"file":"20260924192910_station_publication_admin_review.sql","sha256":"c442d824d243bf9069b2b8424645ef2ff996c9856c861ef4df763bfe18f696a6"},
+    {"file":"20260925133006_station_publication_same_state_guard.sql","sha256":"87fb0d22d64ccf88285f8c78dca5b290d02c3c2cdcde79b5519d988f0d3147b6"},
+    {"file":"20260925143953_public_discovery_visibility_cutover.sql","sha256":"aa83b8e057fad85fd73691dd67ba2205b7a311046485a6b85083d186850a0a0b"},
+    {"file":"20260925175405_controlled_publication_publish_unpublish.sql","sha256":"ca4eed1099404d377fd7b99ce0ef60053a78970761267cd2e6c7bc92c69eb475"},
+    {"file":"20260926014037_foundation_performance_and_rpc_hardening.sql","sha256":"3da37a6df319f69ea56190d4cc80464da3b30fa56fa93221e78ae9344994cb3b"}
+  ],
+  "pendingRepositorySources": [
+    {"file":"20260927200000_rate_abuse_foundation.sql","sha256":"6dcfac4095a096744893226591797474964b270756909e21ee94d2a0f395690f"}
+  ]
 }

@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
+import { decideAdminAccess } from "@/lib/security/admin-access";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -31,36 +32,71 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) {
+  const { data: { user }, error: userError } =
+    await supabase.auth.getUser();
+
+  let profileRole: string | null = null;
+  let profileError = false;
+  let aalLevel: string | null = null;
+  let aalError = false;
+
+  if (!userError && user) {
+    const profileResult = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    profileRole = profileResult.data?.role ?? null;
+    profileError = Boolean(profileResult.error);
+
+    if (
+      !profileError &&
+      profileRole === "admin" &&
+      ADMIN_MFA_ENFORCEMENT === "required"
+    ) {
+      const aalResult =
+        await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+      aalLevel = aalResult.data?.currentLevel ?? null;
+      aalError = Boolean(aalResult.error);
+    }
+  }
+
+  const decision = decideAdminAccess({
+    hasUser: Boolean(user),
+    userError: Boolean(userError),
+    profileRole,
+    profileError,
+    mfaMode: ADMIN_MFA_ENFORCEMENT,
+    aalLevel,
+    aalError,
+    pathname: request.nextUrl.pathname,
+  });
+
+  if (decision.kind === "auth") {
     const url = request.nextUrl.clone();
     url.pathname = "/auth";
     url.searchParams.set("returnTo", safeReturnPath(request));
     return NextResponse.redirect(url);
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (profileError || profile?.role !== "admin") {
+  if (decision.kind === "dashboard") {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     url.search = "";
     return NextResponse.redirect(url);
   }
 
-  if (ADMIN_MFA_ENFORCEMENT === "required") {
-    const { data: aal, error: aalError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (aalError) return new NextResponse("Admin MFA verification is temporarily unavailable.", { status: 503 });
-    if (aal.currentLevel !== "aal2" && request.nextUrl.pathname !== "/admin/security") {
-      const url = request.nextUrl.clone();
-      url.pathname = "/admin/security";
-      url.search = "";
-      return NextResponse.redirect(url);
-    }
+  if (decision.kind === "security") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/admin/security";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
+  if (decision.kind === "unavailable") {
+    return new NextResponse(decision.message, { status: 503 });
   }
 
   return response;
