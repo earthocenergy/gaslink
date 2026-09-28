@@ -63,6 +63,7 @@
     {"file":"20260926014037_foundation_performance_and_rpc_hardening.sql","sha256":"3da37a6df319f69ea56190d4cc80464da3b30fa56fa93221e78ae9344994cb3b"}
   ],
   "pendingRepositorySources": [
-    {"file":"20260927200000_rate_abuse_foundation.sql","sha256":"6dcfac4095a096744893226591797474964b270756909e21ee94d2a0f395690f"}
+    {"file":"20260927200000_rate_abuse_foundation.sql","sha256":"6dcfac4095a096744893226591797474964b270756909e21ee94d2a0f395690f"},
+    {"file":"20260928193000_trust_contract_hardening.sql","sha256":"f3d311d2aaa34b6ca8cd2277d4f7c1a047eb1b8b35ec3a5bbbe0eddff3910ad3"}
   ]
 }

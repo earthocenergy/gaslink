@@ -18,7 +18,8 @@
     "prebuild": "npm run test:station-map && npm run test:publication-pilot && npm run test:public-discovery && npm run test:publication-workflow && npm run test:publication-manifest && npm run test:directory-import && npm run validate:directory-import",
     "build": "next build",
     "start": "next start",
-    "test:admin-access": "node scripts/test-admin-access.mjs"
+    "test:admin-access": "node scripts/test-admin-access.mjs",
+    "test:trust-contract": "node scripts/test-trust-contract.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.7.0",

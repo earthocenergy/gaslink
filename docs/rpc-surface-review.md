@@ -32,3 +32,22 @@ The remaining admin functions are intentionally callable by a signed-in browser 
 ## Exit condition
 
 Re-run Supabase Security Advisor after every RPC privilege change. Any future privileged RPC must have an explicit caller classification, narrow EXECUTE grants, fixed `search_path`, authorization checks, regression tests, and no reliance on user-editable metadata for authorization.
+
+## L1B-T trust-contract addendum
+
+The Foundation trust review established these independent contracts:
+
+- station registration approval does not confer CNGx verification;
+- claim approval does not confer CNGx verification;
+- community moderation does not confer or refresh CNGx verification;
+- operator operational updates use the field-restricted
+  `operator_update_station_operational(...)` SECURITY DEFINER RPC;
+- raw authenticated `stations UPDATE` authority is removed;
+- `admin_set_station_verification(uuid,boolean)` is the independent admin-only
+  station verification/unverification boundary;
+- operator and verification events use dedicated immutable audit primitives
+  rather than `station_publication_reviews`.
+
+Both new RPCs are callable by the authenticated PostgREST role but perform
+their own authoritative authorization checks. Ordinary authenticated users
+therefore cannot use them to acquire operator/admin trust authority.
