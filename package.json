@@ -18,7 +18,11 @@
     "prebuild": "npm run test:station-map && npm run test:publication-pilot && npm run test:public-discovery && npm run test:publication-workflow && npm run test:publication-manifest && npm run test:directory-import && npm run validate:directory-import",
     "build": "next build",
     "start": "next start",
-    "test:admin-access": "node scripts/test-admin-access.mjs"
+    "test:admin-access": "node scripts/test-admin-access.mjs",
+    "test:qa-foundation": "node scripts/test-qa-foundation.mjs",
+    "test:e2e": "npx --yes @playwright/test@1.55.0 test",
+    "test:rpc-security": "node qa/security/test-security-definer-rpcs.mjs",
+    "test:rc": "npm run typecheck && npm run test:foundation && npm run test:qa-foundation && npm run prebuild"
   },
   "dependencies": {
     "@supabase/ssr": "0.7.0",
