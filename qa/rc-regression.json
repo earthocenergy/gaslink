@@ -1,0 +1,1 @@
+{"surfaces":["homepage","auth","stations","station-detail","nearby","trip","reports","favourites","station-claim-registration","marketplace","services-business","notifications","deep-links","degraded-state"],"platforms":["web","android","ios"],"backendGates":["rls","security-definer-rpc","admin-mfa","health","release-metadata"],"releaseBlockers":["P0","P1"]}
