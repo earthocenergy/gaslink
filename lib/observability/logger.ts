@@ -7,6 +7,6 @@ function sanitize(value:unknown):unknown{
  return value;
 }
 export function serverLog(level:Level,event:string,fields:Record<string,unknown>={}){
- const record={timestamp:new Date().toISOString(),level,event,...getReleaseMetadata(),...sanitize(fields)};
+ const record={timestamp:new Date().toISOString(),level,event,...getReleaseMetadata(),...(sanitize(fields) as Record<string,unknown>)};
  const line=JSON.stringify(record); if(level==="error")console.error(line);else if(level==="warn")console.warn(line);else console.info(line);
 }
