@@ -1,0 +1,11 @@
+import fs from "node:fs";
+const need=["app/api/health/live/route.ts","app/api/health/ready/route.ts","lib/observability/release.ts","lib/observability/logger.ts","lib/observability/telemetry.ts","qa/performance-budgets.json","qa/rc-regression.json","qa/rollback-checklist.md","qa/launch-dashboard.md","qa/security/security-definer-rpcs.md","qa/security/test-security-definer-rpcs.mjs"];
+for(const f of need)if(!fs.existsSync(f))throw new Error("Missing Q1 artifact: "+f);
+const live=fs.readFileSync("app/api/health/live/route.ts","utf8"),ready=fs.readFileSync("app/api/health/ready/route.ts","utf8"),logger=fs.readFileSync("lib/observability/logger.ts","utf8"),rpc=fs.readFileSync("qa/security/test-security-definer-rpcs.mjs","utf8");
+for(const t of ["version","release","environment","timestamp"])if(!live.includes(t)&&!fs.readFileSync("lib/observability/release.ts","utf8").includes(t))throw new Error("Live metadata missing "+t);
+if(!ready.includes('supabase:"ready"')||!ready.includes('supabase:"unavailable"'))throw new Error("Readiness state missing");
+for(const t of ["password","token","cookie","authorization","otp","totp","secret","private"])if(!logger.toLowerCase().includes(t))throw new Error("Logger redaction token missing "+t);
+const names=["activate_user_role","admin_equipment_verification","admin_marketplace_listing","admin_marketplace_seller","admin_moderate_station_report","admin_publish_station","admin_review_station_publication","admin_review_station_registration","admin_service_offering","admin_service_provider","admin_unpublish_station","admin_update_business_enquiry","approve_station_claim"];
+for(const n of names)if(!rpc.includes(n))throw new Error("RPC adversarial case missing "+n);
+if(!rpc.includes("Production GasLink Supabase target is prohibited"))throw new Error("Production RPC safety guard missing");
+console.log("Q1 QA foundation static checks OK");
