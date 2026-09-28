@@ -1,0 +1,2 @@
+export const budgets={http_req_failed:["rate<0.01"],http_req_duration:["p(95)<750"]};
+export const profiles={smoke:{vus:1,duration:"10s"},baseline:{stages:[{duration:"1m",target:10},{duration:"3m",target:10},{duration:"1m",target:0}]},peak:{stages:[{duration:"1m",target:25},{duration:"3m",target:25},{duration:"1m",target:0}]},spike:{stages:[{duration:"30s",target:5},{duration:"15s",target:50},{duration:"1m",target:50},{duration:"30s",target:0}]},soak:{stages:[{duration:"2m",target:10},{duration:"30m",target:10},{duration:"2m",target:0}]}};
