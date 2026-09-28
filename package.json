@@ -1,21 +1,39 @@
 {
-  "name":"gaslink",
-  "version":"0.1.0",
-  "private":true,
-  "scripts":{
-    "dev":"next dev",
-    "build:publication-manifest":"node scripts/build-directory-publication-review.mjs",
-    "test:station-map":"node scripts/test-station-map-coordinate-integrity.mjs",
-    "test:publication-pilot":"node scripts/test-controlled-publication-pilot.mjs && node scripts/test-controlled-publication-pilot-null-semantics.mjs",
-    "test:public-discovery":"node scripts/test-public-discovery-visibility.mjs",
-    "test:publication-workflow":"node scripts/test-station-publication-workflow.mjs",
-    "test:publication-manifest":"node scripts/test-directory-publication-review.mjs",
-    "test:directory-import":"node scripts/test-import-station-snapshot.mjs",
-    "validate:directory-import":"node scripts/import-station-snapshot.mjs data/sources/picng-refuelling-stations-2026-09-21.json --overlay data/enrichment/picng-refuelling-stations-location-overlay-2026-09-24.json --validate-only",
-    "prebuild":"npm run test:station-map && npm run test:publication-pilot && npm run test:public-discovery && npm run test:publication-workflow && npm run test:publication-manifest && npm run test:directory-import && npm run validate:directory-import",
-    "build":"next build",
-    "start":"next start"
+  "name": "gaslink",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "typecheck": "tsc --noEmit",
+    "check:migrations": "node scripts/check-migration-integrity.mjs",
+    "test:foundation": "node scripts/test-foundation-lock.mjs",
+    "build:publication-manifest": "node scripts/build-directory-publication-review.mjs",
+    "test:station-map": "node scripts/test-station-map-coordinate-integrity.mjs",
+    "test:publication-pilot": "node scripts/test-controlled-publication-pilot.mjs && node scripts/test-controlled-publication-pilot-null-semantics.mjs",
+    "test:public-discovery": "node scripts/test-public-discovery-visibility.mjs",
+    "test:publication-workflow": "node scripts/test-station-publication-workflow.mjs",
+    "test:publication-manifest": "node scripts/test-directory-publication-review.mjs",
+    "test:directory-import": "node scripts/test-import-station-snapshot.mjs",
+    "validate:directory-import": "node scripts/import-station-snapshot.mjs data/sources/picng-refuelling-stations-2026-09-21.json --overlay data/enrichment/picng-refuelling-stations-location-overlay-2026-09-24.json --validate-only",
+    "prebuild": "npm run test:station-map && npm run test:publication-pilot && npm run test:public-discovery && npm run test:publication-workflow && npm run test:publication-manifest && npm run test:directory-import && npm run validate:directory-import",
+    "build": "next build",
+    "start": "next start",
+    "test:admin-access": "node scripts/test-admin-access.mjs",
+    "test:trust-contract": "node scripts/test-trust-contract.mjs"
   },
-  "dependencies":{"@supabase/ssr":"0.7.0","@supabase/supabase-js":"2.58.0","lucide-react":"0.468.0","next":"latest","react":"latest","react-dom":"latest"},
-  "devDependencies":{"@types/node":"22.15.30","@types/react":"latest","@types/react-dom":"latest","typescript":"5.8.3"}
+  "dependencies": {
+    "@supabase/ssr": "0.7.0",
+    "@supabase/supabase-js": "2.58.0",
+    "lucide-react": "0.468.0",
+    "next": "16.3.5",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.30",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "typescript": "5.8.3",
+    "supabase": "2.118.0"
+  }
 }
