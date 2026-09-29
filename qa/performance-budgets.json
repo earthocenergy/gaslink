@@ -1,0 +1,1 @@
+{"web":{"lcp_p75_ms":2500},"api":{"read_p95_ms":750,"write_p95_ms":1000,"nearby_postgis_p95_ms":1000,"trip_core_p95_ms":2000,"server_5xx_rate_max":0.01},"mobile":{"controlled_rc_crash_free_sessions_min":0.995},"load":{"http_failure_rate_max":0.01}}

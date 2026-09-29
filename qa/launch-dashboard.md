@@ -1,0 +1,3 @@
+# Launch-day dashboard specification
+Panels: availability (live/ready); web request volume, p50/p95/p99, 4xx/5xx and Core Web Vitals; mobile active versions, crashes and startup failures; DB connections/errors/slow queries/PostGIS/Auth; product searches/nearby/station views/trips/reports/registrations/marketplace/services; notification registrations/sends/failures/opens; security admin denials/RPC denials/rate limits/abuse blocks/auth anomalies.
+Every view must filter by environment, platform and release version. P0: app/API/DB unavailable, privilege escalation, secret exposure, notification flood. P1: 5xx >5%/5m, critical API p95 >3s/10m, crash-free <99%, DB saturation >85% sustained.

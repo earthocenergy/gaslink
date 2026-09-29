@@ -1,0 +1,25 @@
+name: QA Foundation
+on:
+  pull_request:
+    branches: [launch/foundation-lock]
+permissions:
+  contents: read
+jobs:
+  qa-foundation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run typecheck:qa
+      - run: npm run check:migrations
+      - run: npm run test:foundation
+      - run: npm run test:trust-contract
+      - run: npm run test:qa-foundation
+      - run: npm run prebuild
+      - run: npm run build
+      - run: npm audit --audit-level=high

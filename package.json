@@ -19,7 +19,12 @@
     "build": "next build",
     "start": "next start",
     "test:admin-access": "node scripts/test-admin-access.mjs",
-    "test:trust-contract": "node scripts/test-trust-contract.mjs"
+    "test:trust-contract": "node scripts/test-trust-contract.mjs",
+    "test:qa-foundation": "node scripts/test-qa-foundation.mjs",
+    "test:e2e": "playwright test",
+    "test:rpc-security": "node qa/security/test-security-definer-rpcs.mjs",
+    "test:rc": "npm run typecheck && npm run typecheck:qa && npm run test:foundation && npm run test:trust-contract && npm run test:qa-foundation && npm run prebuild",
+    "typecheck:qa": "tsc -p qa/playwright/tsconfig.json --noEmit"
   },
   "dependencies": {
     "@supabase/ssr": "0.7.0",
@@ -30,10 +35,11 @@
     "react-dom": "19.3.0"
   },
   "devDependencies": {
+    "@playwright/test": "1.55.1",
     "@types/node": "22.15.30",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "typescript": "5.8.3",
-    "supabase": "2.118.0"
+    "supabase": "2.118.0",
+    "typescript": "5.8.3"
   }
 }
