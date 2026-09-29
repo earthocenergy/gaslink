@@ -15,11 +15,12 @@
     "test:publication-manifest": "node scripts/test-directory-publication-review.mjs",
     "test:directory-import": "node scripts/test-import-station-snapshot.mjs",
     "validate:directory-import": "node scripts/import-station-snapshot.mjs data/sources/picng-refuelling-stations-2026-09-21.json --overlay data/enrichment/picng-refuelling-stations-location-overlay-2026-09-24.json --validate-only",
-    "prebuild": "npm run test:station-map && npm run test:publication-pilot && npm run test:public-discovery && npm run test:publication-workflow && npm run test:publication-manifest && npm run test:directory-import && npm run validate:directory-import",
+    "prebuild": "npm run test:trip && npm run test:station-map && npm run test:publication-pilot && npm run test:public-discovery && npm run test:publication-workflow && npm run test:publication-manifest && npm run test:directory-import && npm run validate:directory-import",
     "build": "next build",
     "start": "next start",
     "test:admin-access": "node scripts/test-admin-access.mjs",
-    "test:trust-contract": "node scripts/test-trust-contract.mjs"
+    "test:trust-contract": "node scripts/test-trust-contract.mjs",
+    "test:trip": "node scripts/test-trip-intelligence.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.7.0",
