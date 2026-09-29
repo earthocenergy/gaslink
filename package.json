@@ -19,6 +19,7 @@
     "build": "next build",
     "start": "next start",
     "test:admin-access": "node scripts/test-admin-access.mjs",
+    "test:trust-contract": "node scripts/test-trust-contract.mjs",
     "test:qa-foundation": "node scripts/test-qa-foundation.mjs",
     "test:e2e": "npx --yes @playwright/test@1.55.0 test",
     "test:rpc-security": "node qa/security/test-security-definer-rpcs.mjs",
