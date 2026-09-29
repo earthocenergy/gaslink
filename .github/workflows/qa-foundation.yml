@@ -15,8 +15,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run typecheck:qa
       - run: npm run check:migrations
       - run: npm run test:foundation
+      - run: npm run test:trust-contract
       - run: npm run test:qa-foundation
       - run: npm run prebuild
       - run: npm run build
