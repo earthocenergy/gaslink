@@ -13,7 +13,9 @@ const stations=read("app/stations/page.tsx");
 const trip=read("app/trip/page.tsx");
 const detail=read("app/stations/[id]/page.tsx");
 const migration=read("supabase/migrations/20260925143953_public_discovery_visibility_cutover.sql");
-const publicPages=[home,stations,trip,detail];
+const publicPages=[home,stations,detail];
+const tripApi=read("app/api/v1/trips/plan/route.ts");
+const tripCorridor=read("supabase/migrations/20260929210000_trip_intelligence_corridor.sql");
 
 function visible(s){
   if(s.record_source_type==null)return false;
@@ -137,6 +139,14 @@ check("all four public station surfaces explicitly apply canonical filtering",()
 check("public detail applies visibility after UUID filtering and only then fetches reports",()=>{
   assert.match(detail,/\.eq\("id",id\)\.or\(PUBLIC_STATION_VISIBILITY_OR_FILTER\)\.maybeSingle\(\)/);
   assert.ok(detail.indexOf("if(station){")<detail.indexOf('from("station_reports")'));
+});
+check("trip planner delegates station selection to the trusted corridor API",()=>{
+  assert.match(trip,/\/api\/v1\/trips\/plan/);
+  assert.doesNotMatch(trip,/\.from\(["']stations["']\)/);
+  assert.match(tripApi,/trip_route_corridor_stations/);
+  assert.match(tripCorridor,/publication_status\s*=\s*'published'/);
+  assert.match(tripCorridor,/location_precision\s+in\s*\('exact','approximate'\)/);
+  assert.match(tripCorridor,/security invoker/i);
 });
 check("admin sessions cannot bypass public-page filtering through RLS",()=>{for(const page of publicPages)assert.match(page,/PUBLIC_STATION_VISIBILITY_OR_FILTER/)});
 

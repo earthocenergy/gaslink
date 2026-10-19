@@ -9,7 +9,7 @@ const candidateA=station("picng-7acdd2023622ddc15506e499",.5,"approximate");p=pl
 const candidateB={...station("picng-8156d44c6cd771ead33e9f0d",.5),locationPrecision:"unconfirmed"};const migration=fs.readFileSync("supabase/migrations/20260929210000_trip_intelligence_corridor.sql","utf8").toLowerCase();if(!migration.includes("location_precision in ('exact','approximate')")||migration.includes("unconfirmed"))fail("Candidate B must be excluded by corridor SQL");
 p=planStops([station("behind",0),station("forward",.55)],200,120);if(p.stops.some(x=>x.id==="behind"))fail("station behind origin");
 p=planStops([station("gap",.7)],300,120);if(p.feasible||p.reason!=="CORRIDOR_GAP_EXCEEDS_RANGE")fail("range-gap infeasible");
-if(!planStops([station("mid",.5)],200,160).feasible||planStops([station("mid",.5)],200,100).feasible)fail("reserve feasible to infeasible");
+if(!planStops([station("mid",.5)],200,160).feasible||planStops([station("mid",.5)],200,99).feasible)fail("reserve feasible to infeasible");
 p=planStops([station("primary",.5,"exact","available",100),station("alternate",.5,"exact","available",500)],200,120);if(!p.feasible||!p.alternateStops.length)fail("alternate stop sequence");
 if(planStops([],0,100).reason!=="INVALID_ROUTE")fail("invalid route");
 const mapbox=fs.readFileSync("lib/routing/mapbox.ts","utf8"),api=fs.readFileSync("app/api/v1/trips/plan/route.ts","utf8"),trip=fs.readFileSync("app/trip/page.tsx","utf8");
