@@ -12,6 +12,56 @@ p=planStops([station("gap",.7)],300,120);if(p.feasible||p.reason!=="CORRIDOR_GAP
 if(!planStops([station("mid",.5)],200,160).feasible||planStops([station("mid",.5)],200,99).feasible)fail("reserve feasible to infeasible");
 p=planStops([station("primary",.5,"exact","available",100),station("alternate",.5,"exact","available",500)],200,120);if(!p.feasible||!p.alternateStops.length)fail("alternate stop sequence");
 if(planStops([],0,100).reason!=="INVALID_ROUTE")fail("invalid route");
+
+
+// T1R shared-final alternative regression.
+{
+ const candidates=[
+  station("first-a",.25),
+  station("first-b",.30),
+  station("shared-final",.65)
+ ];
+ const result=planStops(candidates,300,120);
+ if(!result.feasible||
+    result.stops.map(s=>s.id).join(",")!=="first-a,shared-final"||
+    result.alternateStops.map(s=>s.id).join(",")!=="first-b,shared-final")
+  fail("shared-final feasible alternative must be preserved");
+}
+
+// T1R planner hardening regression coverage.
+const crowded=[
+ ...Array.from({length:9},(_,i)=>
+  station("early-"+i,.1+i*.001)),
+ station("optimal",.5)
+];
+p=planStops(crowded,200,110);
+if(!p.feasible||p.stops.length!==1||
+   p.stops[0].id!=="optimal")
+ fail("planner must prefer the minimum-stop feasible path");
+
+for(const bad of [NaN,Infinity,-Infinity,0,-10]){
+ p=planStops([station("mid",.5)],200,bad);
+ if(p.feasible||p.reason!=="INVALID_RANGE")
+  fail("invalid effective range must fail closed: "+bad);
+}
+
+for(const bad of [NaN,Infinity,-Infinity,-1,1.1]){
+ p=planStops([station("bad",bad)],200,120);
+ if(p.feasible)
+  fail("invalid progress must not establish feasibility");
+}
+
+p=planStops([station("unconfirmed",.5,"unconfirmed")],200,120);
+if(p.feasible)
+ fail("unconfirmed station must not establish feasibility");
+
+p=planStops([
+ station("offline",.5,"exact","offline"),
+ station("available",.5)
+],200,120);
+if(!p.feasible||p.stops[0]?.id!=="available")
+ fail("offline station must not be selected");
+
 const mapbox=fs.readFileSync("lib/routing/mapbox.ts","utf8"),api=fs.readFileSync("app/api/v1/trips/plan/route.ts","utf8"),trip=fs.readFileSync("app/trip/page.tsx","utf8");
 if(mapbox.includes("NEXT_PUBLIC_")||!mapbox.includes("process.env.MAPBOX_ACCESS_TOKEN"))fail("Mapbox token boundary");
 for(const x of ["AbortSignal.timeout","Malformed Mapbox route","cache:\"no-store\""])if(!mapbox.includes(x))fail("provider resilience missing "+x);
