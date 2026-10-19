@@ -9,20 +9,16 @@ function noStore<T extends NextResponse>(response: T): T {
   return response;
 }
 
-function unavailable<T extends NextResponse>(
-  applyCookies: (response: T) => T,
-) {
-  return applyCookies(
-    noStore(
-      NextResponse.json(
-        {
-          ok: false,
-          reason: "service_unavailable",
-          message: "Account-deletion review is temporarily unavailable.",
-        },
-        { status: 503 },
-      ),
-    ) as T,
+function unavailable() {
+  return noStore(
+    NextResponse.json(
+      {
+        ok: false,
+        reason: "service_unavailable",
+        message: "Account-deletion review is temporarily unavailable.",
+      },
+      { status: 503 },
+    ),
   );
 }
 
@@ -143,7 +139,7 @@ export async function GET(request: NextRequest) {
   ];
 
   if (requiredResults.some((result) => result.error)) {
-    return unavailable(applyCookies);
+    return applyCookies(unavailable());
   }
 
   let marketplaceListings = 0;
@@ -155,7 +151,7 @@ export async function GET(request: NextRequest) {
       .eq("seller_id", marketplaceSellerResult.data.id);
 
     if (result.error) {
-      return unavailable(applyCookies);
+      return applyCookies(unavailable());
     }
 
     marketplaceListings = result.count ?? 0;
@@ -177,7 +173,7 @@ export async function GET(request: NextRequest) {
     ]);
 
     if (offeringsResult.error || enquiriesResult.error) {
-      return unavailable(applyCookies);
+      return applyCookies(unavailable());
     }
 
     serviceOfferings = offeringsResult.count ?? 0;

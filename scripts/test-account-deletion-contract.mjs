@@ -65,10 +65,14 @@ if (!page.includes("/api/account/deletion/preflight")) {
   throw new Error("Account deletion page is not wired to the canonical preflight");
 }
 
-for (const source of [page, privacy, terms, support, footer]) {
-  if (!source.includes("support@cngx.ng") && source !== footer) {
+for (const source of [privacy, terms, support]) {
+  if (!source.includes("support@cngx.ng")) {
     throw new Error("Public legal/support surface missing support contact");
   }
+}
+
+if (!page.includes("ACCOUNT_DELETION_SUPPORT_EMAIL")) {
+  throw new Error("Account deletion page is not using the canonical support contact");
 }
 
 for (const href of ["/privacy", "/terms", "/support", "/account-deletion"]) {
