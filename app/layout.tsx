@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { APP_NAME, APP_TAGLINE } from "@/lib/brand";
+import SiteFooter from "@/components/SiteFooter";
 
 export const metadata: Metadata = {
   title: APP_NAME + " | " + APP_TAGLINE,
@@ -21,7 +22,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>{children}<SiteFooter /></body>
     </html>
   );
 }
