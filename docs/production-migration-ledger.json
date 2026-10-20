@@ -1,0 +1,69 @@
+{
+  "capturedAt": "2026-09-26",
+  "projectRef": "knhrgugextsmisyxzdgc",
+  "head": "20260926014037",
+  "migrations": [
+    {"version":"20260920022817","name":"init_gaslink_phase0"},
+    {"version":"20260920031605","name":"secure_roles_and_operator_workflow"},
+    {"version":"20260920031643","name":"lock_internal_trigger_functions"},
+    {"version":"20260920033250","name":"allow_backend_role_administration"},
+    {"version":"20260920033941","name":"operator_station_update_policy"},
+    {"version":"20260920064019","name":"station_registration_and_freshness"},
+    {"version":"20260920100716","name":"marketplace_foundation"},
+    {"version":"20260920121326","name":"cng_services_foundation"},
+    {"version":"20260920123504","name":"gaslink_business_and_marketplace_review"},
+    {"version":"20260920200959","name":"gaslink_multi_roles_admin_ops"},
+    {"version":"20260920202547","name":"station_admin_moderation_and_freshness"},
+    {"version":"20260920203850","name":"role_activation_and_verified_role_sync"},
+    {"version":"20260920205321","name":"admin_business_and_equipment_controls"},
+    {"version":"20260920205715","name":"account_signup_profile_bootstrap"},
+    {"version":"20260920205821","name":"backfill_buyer_role"},
+    {"version":"20260920210920","name":"qa_controlled_test_dataset_v2"},
+    {"version":"20260920211729","name":"qa_visibility_policy_hardening"},
+    {"version":"20260920212050","name":"qa_station_report_visibility_guard"},
+    {"version":"20260921002609","name":"harden_rpc_execute_permissions"},
+    {"version":"20260921002900","name":"gate_verified_commercial_roles"},
+    {"version":"20260921002954","name":"qa_numeric_integrity_constraints"},
+    {"version":"20260921063158","name":"qa_performance_indexes_and_rls_cleanup"},
+    {"version":"20260921125805","name":"restrict_user_role_self_assignment"},
+    {"version":"20260922065101","name":"phase1_station_geospatial_foundation"},
+    {"version":"20260924165232","name":"grant_service_role_gis_usage"},
+    {"version":"20260924192838","name":"station_publication_foundation"},
+    {"version":"20260924192910","name":"station_publication_admin_review"},
+    {"version":"20260925133006","name":"station_publication_same_state_guard"},
+    {"version":"20260925143953","name":"public_discovery_visibility_cutover"},
+    {"version":"20260925175405","name":"controlled_publication_publish_unpublish"},
+    {"version":"20260926014037","name":"foundation_performance_and_rpc_hardening"}
+  ],
+  "repositoryExactVersionMatches": [
+    "20260921125805",
+    "20260924165232",
+    "20260924192838",
+    "20260924192910",
+    "20260925133006",
+    "20260925143953",
+    "20260925175405",
+    "20260926014037"
+  ],
+  "knownLogicalVersionMismatches": [
+    {"repository":"0001_phase0.sql","production":"20260920022817_init_gaslink_phase0","strategy":"authoritative baseline replaces historical replay"},
+    {"repository":"20260921170000_phase1_station_geospatial_foundation.sql","production":"20260922065101_phase1_station_geospatial_foundation","strategy":"do not reapply; retain repository file as historical source and record production version"}
+  ],
+  "missingProductionSourceVersionCount": 23,
+  "lockedRepositorySources": [
+    {"file":"0001_phase0.sql","sha256":"2721a6e2f8d259dedc4c2a05d87513f5011bf43fdc93cd784f27f864bb2d84f0"},
+    {"file":"20260921125805_restrict_user_role_self_assignment.sql","sha256":"fda3f5511c3ef7ec9211b66a0e621abc5832d665a50f3a3f6eabe545abca98b9"},
+    {"file":"20260921170000_phase1_station_geospatial_foundation.sql","sha256":"d195115f6b2720afc57137a23c6b4206244eb67dacbcf392713a042520c9a9f6"},
+    {"file":"20260924165232_grant_service_role_gis_usage.sql","sha256":"65ed14e57ce1f4f566e4b070f9eea77ccda6465dcd72c3d7ae9a0aa0a96a9e19"},
+    {"file":"20260924192838_station_publication_foundation.sql","sha256":"1bd855454abff9e9dda9081b41345e3fed6f249159a4c4e2e9df4631a5c29caa"},
+    {"file":"20260924192910_station_publication_admin_review.sql","sha256":"c442d824d243bf9069b2b8424645ef2ff996c9856c861ef4df763bfe18f696a6"},
+    {"file":"20260925133006_station_publication_same_state_guard.sql","sha256":"87fb0d22d64ccf88285f8c78dca5b290d02c3c2cdcde79b5519d988f0d3147b6"},
+    {"file":"20260925143953_public_discovery_visibility_cutover.sql","sha256":"aa83b8e057fad85fd73691dd67ba2205b7a311046485a6b85083d186850a0a0b"},
+    {"file":"20260925175405_controlled_publication_publish_unpublish.sql","sha256":"ca4eed1099404d377fd7b99ce0ef60053a78970761267cd2e6c7bc92c69eb475"},
+    {"file":"20260926014037_foundation_performance_and_rpc_hardening.sql","sha256":"3da37a6df319f69ea56190d4cc80464da3b30fa56fa93221e78ae9344994cb3b"}
+  ],
+  "pendingRepositorySources": [
+    {"file":"20260927200000_rate_abuse_foundation.sql","sha256":"6dcfac4095a096744893226591797474964b270756909e21ee94d2a0f395690f"},
+    {"file":"20260928193000_trust_contract_hardening.sql","sha256":"f3d311d2aaa34b6ca8cd2277d4f7c1a047eb1b8b35ec3a5bbbe0eddff3910ad3"}
+  ]
+}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import BackButton from "@/components/BackButton";
 import PublicStationTrust from "@/components/PublicStationTrust";
 import {createClient} from "@/lib/supabase/client";
+import {protectedWrite} from "@/lib/security/protected-write";
 import {PUBLIC_STATION_VISIBILITY_OR_FILTER,publicStationDirections} from "@/lib/station-public-visibility";
 import {MapPin,Navigation,Clock3,ShieldCheck,Gauge,MessageSquare,Building2,CheckCircle2} from "lucide-react";
 type S={
@@ -30,8 +31,8 @@ export default function StationPage(){
   });
   db.auth.getUser().then(({data})=>setUser(data.user?.id||null));
  },[id]);
- async function report(){if(!user){sessionStorage.setItem("gaslink_return",location.pathname);location.href="/auth";return}setMsg("");if(price&&+price<0){setMsg("Price cannot be negative.");return}if(queue&&+queue<0){setMsg("Queue time cannot be negative.");return}const {error}=await createClient().from("station_reports").insert({station_id:id,user_id:user,status,price_per_scm:price?+price:null,queue_minutes:queue?+queue:null});setMsg(error?error.message:"Report submitted for Earthoc moderation. Thank you.");if(!error){setPrice("");setQueue("")}}
- async function claim(){if(!user){sessionStorage.setItem("gaslink_return",location.pathname);location.href="/auth";return}const business=prompt("Business/operator name");if(!business)return;const phone=prompt("Contact phone number");const {error}=await createClient().from("station_claims").insert({station_id:id,user_id:user,business_name:business,phone});setMsg(error?error.message:"Station claim submitted for Earthoc approval.")}
+ async function report(){if(!user){sessionStorage.setItem("gaslink_return",location.pathname);location.href="/auth";return}setMsg("");if(price&&+price<0){setMsg("Price cannot be negative.");return}if(queue&&+queue<0){setMsg("Queue time cannot be negative.");return}const result=await protectedWrite("station_report",{station_id:id,status,price_per_scm:price?+price:null,queue_minutes:queue?+queue:null});setMsg(result.ok?"Report submitted for Earthoc moderation. Thank you.":result.message);if(result.ok){setPrice("");setQueue("")}}
+ async function claim(){if(!user){sessionStorage.setItem("gaslink_return",location.pathname);location.href="/auth";return}const business=prompt("Business/operator name");if(!business)return;const phone=prompt("Contact phone number");const result=await protectedWrite("station_claim",{station_id:id,business_name:business,phone:phone||null});setMsg(result.ok?"Station claim submitted for Earthoc approval.":result.message)}
  if(loading)return <main><div className="loadingState">Loading station information…</div></main>;
  if(!s)return <main><section className="panel"><h1>Station not found</h1><p className="muted">This station is not currently available through public CNGx discovery.</p><Link href="/stations" className="primary">Back to Find CNG</Link></section></main>;
  const freshness=s.last_verified_at?new Date(s.last_verified_at).toLocaleString():"No verified update yet";
