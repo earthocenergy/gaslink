@@ -101,6 +101,17 @@ export default function AccountSecurityPage() {
 
         {message && <div className="authMsg">{message}</div>}
 
+        <div style={{ borderTop: "1px solid var(--line)", paddingTop: 20, marginTop: 8 }}>
+          <h2 style={{ marginBottom: 8 }}>Account deletion</h2>
+          <p className="muted">
+            Review the CNGx account-deletion process and check whether your
+            account has relationships that require manual review.
+          </p>
+          <Link href="/account-deletion" className="secondary">
+            Review account deletion
+          </Link>
+        </div>
+
         <p className="muted">
           If you suspect your password is compromised, reset it first and then
           use “Sign out everywhere” if you want every session terminated.
