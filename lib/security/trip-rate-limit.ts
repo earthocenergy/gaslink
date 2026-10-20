@@ -1,0 +1,4 @@
+import crypto from"node:crypto";import type{NextRequest}from"next/server";
+export type TripRateAction="trip_plan"|"place_resolution";
+const windows=new Map<string,{start:number,count:number}>();
+export function checkTripRateLimit(request:NextRequest,action:TripRateAction){const secret=process.env.ABUSE_FINGERPRINT_SECRET||"development-only";const raw=(request.headers.get("x-forwarded-for")?.split(",")[0]||request.headers.get("x-real-ip")||"unknown")+"|"+(request.headers.get("user-agent")||"unknown");const key=crypto.createHmac("sha256",secret).update(action+"|"+raw).digest("hex");const now=Date.now(),limit=action==="trip_plan"?12:60,span=60000;const v=windows.get(key);if(!v||now-v.start>=span){windows.set(key,{start:now,count:1});return{allowed:true}}v.count++;if(v.count>limit)return{allowed:false,retryAfter:Math.ceil((span-(now-v.start))/1000)};return{allowed:true}}

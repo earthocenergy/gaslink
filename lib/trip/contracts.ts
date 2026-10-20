@@ -1,0 +1,9 @@
+export type Coordinate={latitude:number;longitude:number};
+export type TripFailureReason="DESTINATION_UNRESOLVED"|"ORIGIN_UNRESOLVED"|"ROUTING_PROVIDER_UNAVAILABLE"|"NO_TRUSTED_STATIONS_ON_CORRIDOR"|"NO_REACHABLE_STATION"|"CORRIDOR_GAP_EXCEEDS_RANGE"|"INVALID_RANGE"|"INVALID_ROUTE";
+export type RouteGeometry={type:"LineString";coordinates:[number,number][]};
+export type ResolvedPlace={label:string;coordinate:Coordinate};
+export type NormalizedRoute={geometry:RouteGeometry;distanceMeters:number;durationSeconds:number};
+export type TripStation={id:string;name:string;address:string;city:string|null;state:string|null;latitude:number;longitude:number;status:string;pricePerScm:number|null;queueMinutes:number|null;isVerified:boolean;lastVerifiedAt:string|null;locationPrecision:"exact"|"approximate";recordSourceType:string|null;recordSourceName:string|null;distanceFromRouteMeters:number;routeProgressFraction:number};
+export type PlannedStop=TripStation&{routeProgressKm:number;legDistanceKm:number};
+export type TripPlanRequest={origin:string;destination:string;vehicleRangeKm:number;reservePercent:number;corridorKm?:number};
+export type TripPlanResponse={ok:boolean;failureReason?:TripFailureReason;message?:string;origin?:ResolvedPlace;destination?:ResolvedPlace;route?:NormalizedRoute;vehicleRangeKm?:number;reservePercent?:number;effectiveRangeKm?:number;feasible?:boolean;stops?:PlannedStop[];alternateStops?:PlannedStop[];warnings?:string[];provider:"mapbox";contractVersion:"v1"};

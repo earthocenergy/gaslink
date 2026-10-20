@@ -1,0 +1,3 @@
+import type{NormalizedRoute,ResolvedPlace}from"@/lib/trip/contracts";
+export class PlaceResolutionError extends Error{constructor(public readonly kind:"origin"|"destination"){super(kind+" unresolved")}}
+export interface RoutingProvider{readonly name:string;resolvePlace(query:string):Promise<ResolvedPlace|null>;route(origin:ResolvedPlace,destination:ResolvedPlace):Promise<NormalizedRoute>;searchPlaces(query:string):Promise<ResolvedPlace[]>}
