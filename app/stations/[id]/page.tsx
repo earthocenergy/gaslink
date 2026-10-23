@@ -5,6 +5,7 @@ import Link from "next/link";
 import BackButton from "@/components/BackButton";
 import PublicStationTrust from "@/components/PublicStationTrust";
 import {createClient} from "@/lib/supabase/client";
+import {stationReadIssue,type StationReadIssue} from "@/lib/station-load-contract";
 import {protectedWrite} from "@/lib/security/protected-write";
 import {PUBLIC_STATION_VISIBILITY_OR_FILTER,publicStationDirections} from "@/lib/station-public-visibility";
 import {MapPin,Navigation,Clock3,ShieldCheck,Gauge,MessageSquare,Building2,CheckCircle2} from "lucide-react";
@@ -18,22 +19,45 @@ type R={id:string;status:string;price_per_scm:number|null;queue_minutes:number|n
 const labels:Record<string,string>={available:"Available",low_supply:"Low supply",out_of_gas:"Out of gas",offline:"Offline",unknown:"Unknown"};
 export default function StationPage(){
  const {id}=useParams<{id:string}>();
- const [s,setS]=useState<S|null>(null),[user,setUser]=useState<string|null>(null),[msg,setMsg]=useState(""),[status,setStatus]=useState("available"),[price,setPrice]=useState(""),[queue,setQueue]=useState(""),[reports,setReports]=useState<R[]>([]),[loading,setLoading]=useState(true);
+ const [s,setS]=useState<S|null>(null),[user,setUser]=useState<string|null>(null),[msg,setMsg]=useState(""),[status,setStatus]=useState("available"),[price,setPrice]=useState(""),[queue,setQueue]=useState(""),[reports,setReports]=useState<R[]>([]),[loading,setLoading]=useState(true),[loadIssue,setLoadIssue]=useState<StationReadIssue|null>(null),[reportsIssue,setReportsIssue]=useState<StationReadIssue|null>(null),[loadAttempt,setLoadAttempt]=useState(0);
  useEffect(()=>{
+  let active=true;
   const db=createClient();
-  db.from("stations").select("*").eq("id",id).or(PUBLIC_STATION_VISIBILITY_OR_FILTER).maybeSingle().then(async ({data})=>{
-   const station=(data||null) as S|null;
-   setS(station);setLoading(false);
-   if(station){
-    const {data:reportData}=await db.from("station_reports").select("id,status,price_per_scm,queue_minutes,created_at").eq("station_id",id).eq("is_moderated",true).order("created_at",{ascending:false}).limit(5);
-    setReports((reportData||[]) as R[]);
+  setLoading(true);setLoadIssue(null);setReportsIssue(null);setS(null);setReports([]);
+  async function load(){
+   try{
+    const result=await db.from("stations").select("*").eq("id",id).or(PUBLIC_STATION_VISIBILITY_OR_FILTER).maybeSingle();
+    if(!active)return;
+    const issue=stationReadIssue({target:"detail",status:result.status,error:result.error});
+    if(issue){setLoadIssue(issue);return}
+    const station=(result.data||null) as S|null;
+    setS(station);
+    if(station){
+     try{
+      const reportResult=await db.from("station_reports").select("id,status,price_per_scm,queue_minutes,created_at").eq("station_id",id).eq("is_moderated",true).order("created_at",{ascending:false}).limit(5);
+      if(!active)return;
+      const reportIssue=stationReadIssue({target:"reports",status:reportResult.status,error:reportResult.error});
+      if(reportIssue){setReports([]);setReportsIssue(reportIssue)}
+      else setReports((reportResult.data||[]) as R[]);
+     }catch(error){
+      if(active)setReportsIssue(stationReadIssue({target:"reports",status:null,error}));
+     }
+    }
+   }catch(error){
+    if(active)setLoadIssue(stationReadIssue({target:"detail",status:null,error}));
+   }finally{
+    if(active)setLoading(false);
    }
-  });
-  db.auth.getUser().then(({data})=>setUser(data.user?.id||null));
- },[id]);
+  }
+  load();
+  db.auth.getUser().then(({data})=>{if(active)setUser(data.user?.id||null)}).catch(()=>{if(active)setUser(null)});
+  return()=>{active=false};
+ },[id,loadAttempt]);
  async function report(){if(!user){sessionStorage.setItem("gaslink_return",location.pathname);location.href="/auth";return}setMsg("");if(price&&+price<0){setMsg("Price cannot be negative.");return}if(queue&&+queue<0){setMsg("Queue time cannot be negative.");return}const result=await protectedWrite("station_report",{station_id:id,status,price_per_scm:price?+price:null,queue_minutes:queue?+queue:null});setMsg(result.ok?"Report submitted for Earthoc moderation. Thank you.":result.message);if(result.ok){setPrice("");setQueue("")}}
  async function claim(){if(!user){sessionStorage.setItem("gaslink_return",location.pathname);location.href="/auth";return}const business=prompt("Business/operator name");if(!business)return;const phone=prompt("Contact phone number");const result=await protectedWrite("station_claim",{station_id:id,business_name:business,phone:phone||null});setMsg(result.ok?"Station claim submitted for Earthoc approval.":result.message)}
  if(loading)return <main><div className="loadingState">Loading station information…</div></main>;
+ if(loadIssue?.kind==="not_found")return <main><section className="panel"><h1>Station not found</h1><p className="muted">This station is not currently available through public CNGx discovery.</p><Link href="/stations" className="primary">Back to Find CNG</Link></section></main>;
+ if(loadIssue)return <main><section className="panel" role="alert"><h1>{loadIssue.title}</h1><p className="muted">{loadIssue.message}</p>{loadIssue.retryable&&<button className="primary" onClick={()=>setLoadAttempt(x=>x+1)}>Retry station details</button>}<Link href="/stations" className="secondary">Back to Find CNG</Link></section></main>;
  if(!s)return <main><section className="panel"><h1>Station not found</h1><p className="muted">This station is not currently available through public CNGx discovery.</p><Link href="/stations" className="primary">Back to Find CNG</Link></section></main>;
  const freshness=s.last_verified_at?new Date(s.last_verified_at).toLocaleString():"No verified update yet";
  const directions=publicStationDirections(s);
@@ -41,6 +65,6 @@ export default function StationPage(){
  <section className="stationDetailHero"><div className="stationDetailHeroInner"><div className="cardBadges"><span className={"status "+s.status}>{labels[s.status]||s.status}</span>{s.is_demo&&<span className="demo">Demo data</span>}{s.is_verified&&<span className="verifiedBadge"><ShieldCheck size={12}/> Verified station</span>}</div><h1>{s.name}</h1><p><MapPin size={17}/>{s.address}{s.city?", "+s.city:""}{s.state?", "+s.state:""}</p><PublicStationTrust recordSourceType={s.record_source_type} recordSourceName={s.record_source_name} isVerified={s.is_verified} status={s.status} locationPrecision={s.location_precision}/><div className="actionRow"><button className="primary" onClick={()=>window.open(directions.url,"_blank")}><Navigation size={17}/> {directions.label}</button><button className="secondary darkSecondary" onClick={claim}><Building2 size={17}/> Claim this station</button></div></div></section>
  <section className="stationDetailV2"><div className="stationMainColumn"><div className="stationFacts"><div><Gauge/><small>Price / SCM</small><strong>{s.price_per_scm!=null?"₦"+s.price_per_scm:"Not reported"}</strong></div><div><Clock3/><small>Estimated queue</small><strong>{s.queue_minutes!=null?s.queue_minutes+" min":"Unknown"}</strong></div><div><Clock3/><small>Operating hours</small><strong>{s.opening_hours||"Not reported"}</strong></div><div><ShieldCheck/><small>Last verified</small><strong>{freshness}</strong></div></div>
  <section className="infoCard"><div className="infoCardHead"><div><span className="eyebrow">Station information</span><h2>What drivers should know</h2></div></div><div className="infoRows"><div><span>Operator</span><b>{s.operator_name||"Not reported"}</b></div><div><span>Current status</span><b>{labels[s.status]||s.status}</b></div><div><span>Open now</span><b>{s.open_now==null?"Not reported":s.open_now?"Yes":"No"}</b></div><div><span>Vehicle compatibility</span><b>{s.vehicle_compatibility?.length?s.vehicle_compatibility.join(", "):"Not reported"}</b></div></div></section>
- <section className="infoCard"><div className="infoCardHead"><div><span className="eyebrow">Community intelligence</span><h2>Recent verified reports</h2></div><MessageSquare/></div>{reports.length?<div className="reportTimeline">{reports.map(r=><div className="reportItem" key={r.id}><span className={"status "+r.status}>{labels[r.status]||r.status}</span><div><b>{r.price_per_scm!=null?"₦"+r.price_per_scm+"/SCM":"Price not reported"}</b><span>{r.queue_minutes!=null?r.queue_minutes+" min queue":"Queue unknown"} · {new Date(r.created_at).toLocaleString()}</span></div></div>)}</div>:<div className="emptyInline">No moderated community reports yet.</div>}</section></div>
+ <section className="infoCard"><div className="infoCardHead"><div><span className="eyebrow">Community intelligence</span><h2>Recent verified reports</h2></div><MessageSquare/></div>{reportsIssue?<div className="emptyInline" role="alert"><b>{reportsIssue.title}</b><p className="muted">{reportsIssue.message}</p>{reportsIssue.retryable&&<button className="secondary" onClick={()=>setLoadAttempt(x=>x+1)}>Retry reports</button>}</div>:reports.length?<div className="reportTimeline">{reports.map(r=><div className="reportItem" key={r.id}><span className={"status "+r.status}>{labels[r.status]||r.status}</span><div><b>{r.price_per_scm!=null?"₦"+r.price_per_scm+"/SCM":"Price not reported"}</b><span>{r.queue_minutes!=null?r.queue_minutes+" min queue":"Queue unknown"} · {new Date(r.created_at).toLocaleString()}</span></div></div>)}</div>:<div className="emptyInline">No moderated community reports yet.</div>}</section></div>
  <aside className="reportBox reportSticky"><div className="reportIcon"><MessageSquare/></div><h2>Report station conditions</h2><p className="muted">Help other drivers know before they go. Reports are reviewed before becoming trusted network information.</p><label>Availability<select value={status} onChange={e=>setStatus(e.target.value)}><option value="available">Available</option><option value="low_supply">Low supply</option><option value="out_of_gas">Out of gas</option><option value="offline">Offline</option></select></label><label>Current price / SCM<input type="number" min="0" value={price} onChange={e=>setPrice(e.target.value)} placeholder="Optional"/></label><label>Estimated queue (minutes)<input type="number" min="0" value={queue} onChange={e=>setQueue(e.target.value)} placeholder="Optional"/></label><button className="primary fullButton" onClick={report}>Submit station report</button>{msg&&<div className="authMsg"><CheckCircle2 size={16}/>{msg}</div>}<small className="formNote">You must be signed in to submit a report.</small></aside></section></main>
 }
