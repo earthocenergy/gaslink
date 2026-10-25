@@ -7,7 +7,7 @@ This document records the F2-03 recovery approach. It does **not** reconstruct o
 - Recorded production migration head: `20260926014037`
 - Applied production migration versions: 31
 - Exact historical production versions without repository source: 23
-- Current unapplied forward migration sources: 5
+- Current unapplied forward migration sources: 7
 
 ## Reconciliation rule
 

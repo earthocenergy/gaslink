@@ -136,15 +136,42 @@ async function sharedRateRpc(
 function normalizeDecision(
   data: unknown,
 ): SharedDecision | null {
-  const value = Array.isArray(data)
-    ? data[0]
-    : data;
-
-  if (!value || typeof value !== "object") {
+  if (!Array.isArray(data) || data.length !== 1) {
     return null;
   }
 
-  return value as SharedDecision;
+  const value = data[0];
+
+  if (
+    !value
+    || typeof value !== "object"
+    || Array.isArray(value)
+  ) {
+    return null;
+  }
+
+  const decision = value as SharedDecision;
+
+  if (typeof decision.allowed !== "boolean") {
+    return null;
+  }
+
+  if (decision.allowed) {
+    return decision.retry_after_seconds === null
+      ? decision
+      : null;
+  }
+
+  if (
+    typeof decision.retry_after_seconds !== "number"
+    || !Number.isInteger(decision.retry_after_seconds)
+    || decision.retry_after_seconds < 1
+    || decision.retry_after_seconds > 60
+  ) {
+    return null;
+  }
+
+  return decision;
 }
 
 export async function checkTripRateLimit(

@@ -149,6 +149,136 @@ try {
   );
 
   await check(
+    "empty RPC result fails closed",
+    async () => {
+      const result = await checkTripRateLimit(
+        base,
+        "trip_plan",
+        {
+          userId: null,
+          rpc: async () => ({
+            data: [],
+            error: null,
+          }),
+        },
+      );
+
+      assert.deepEqual(result, {
+        allowed: false,
+        unavailable: true,
+      });
+    },
+  );
+
+  await check(
+    "multi-row RPC result fails closed",
+    async () => {
+      const result = await checkTripRateLimit(
+        base,
+        "trip_plan",
+        {
+          userId: null,
+          rpc: async () => ({
+            data: [
+              {
+                allowed: true,
+                retry_after_seconds: null,
+              },
+              {
+                allowed: false,
+                retry_after_seconds: 5,
+              },
+            ],
+            error: null,
+          }),
+        },
+      );
+
+      assert.deepEqual(result, {
+        allowed: false,
+        unavailable: true,
+      });
+    },
+  );
+
+  await check(
+    "non-array RPC decision fails closed",
+    async () => {
+      const result = await checkTripRateLimit(
+        base,
+        "trip_plan",
+        {
+          userId: null,
+          rpc: async () => ({
+            data: {
+              allowed: true,
+              retry_after_seconds: null,
+            },
+            error: null,
+          }),
+        },
+      );
+
+      assert.deepEqual(result, {
+        allowed: false,
+        unavailable: true,
+      });
+    },
+  );
+
+  await check(
+    "allowed decision with retry metadata fails closed",
+    async () => {
+      const result = await checkTripRateLimit(
+        base,
+        "trip_plan",
+        {
+          userId: null,
+          rpc: async () => ({
+            data: [{
+              allowed: true,
+              retry_after_seconds: 1,
+            }],
+            error: null,
+          }),
+        },
+      );
+
+      assert.deepEqual(result, {
+        allowed: false,
+        unavailable: true,
+      });
+    },
+  );
+
+  await check(
+    "rejected decision requires integer retry within one-minute window",
+    async () => {
+      for (const retry of [0, 61, 1.5]) {
+        const result = await checkTripRateLimit(
+          base,
+          "trip_plan",
+          {
+            userId: null,
+            rpc: async () => ({
+              data: [{
+                allowed: false,
+                retry_after_seconds: retry,
+              }],
+              error: null,
+            }),
+          },
+        );
+
+        assert.deepEqual(result, {
+          allowed: false,
+          unavailable: true,
+        });
+      }
+    },
+  );
+
+  await check(
     "client-controlled forwarding headers do not affect fingerprint",
     async () => {
       const captures = [];

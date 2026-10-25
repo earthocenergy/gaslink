@@ -236,6 +236,33 @@ begin
       'service_role Trip limiter execute missing';
   end if;
 
+  if has_function_privilege(
+    'authenticated',
+    'public.cleanup_trip_rate_limit_counters(interval)',
+    'EXECUTE'
+  ) then
+    raise exception
+      'authenticated unexpectedly executes Trip limiter cleanup';
+  end if;
+
+  if has_function_privilege(
+    'anon',
+    'public.cleanup_trip_rate_limit_counters(interval)',
+    'EXECUTE'
+  ) then
+    raise exception
+      'anon unexpectedly executes Trip limiter cleanup';
+  end if;
+
+  if not has_function_privilege(
+    'service_role',
+    'public.cleanup_trip_rate_limit_counters(interval)',
+    'EXECUTE'
+  ) then
+    raise exception
+      'service_role Trip limiter cleanup execute missing';
+  end if;
+
   raise notice 'PASS: privilege and revocation posture';
 end
 $$;
@@ -585,7 +612,19 @@ begin
       'Trip request 13 did not rate-limit correctly';
   end if;
 
-  raise notice 'PASS: shared Trip subject quota';
+  if (
+    select request_count
+    from public.trip_rate_limit_counters
+    where action = 'trip_plan'
+      and subject_kind = 'subject'
+      and subject_key = repeat('a', 64)
+  ) <> 13 then
+    raise exception
+      'rejected Trip request did not continue incrementing subject counter';
+  end if;
+
+  raise notice
+    'PASS: shared Trip subject quota and rejected-request accounting';
 end
 $$;
 
@@ -629,6 +668,100 @@ begin
   end if;
 
   raise notice 'PASS: shared Trip network quota';
+end
+$$;
+
+reset role;
+
+-- ============================================================
+-- Trip limiter cleanup / retention contract
+-- ============================================================
+
+set role service_role;
+
+delete from public.trip_rate_limit_counters;
+
+insert into public.trip_rate_limit_counters(
+  action,
+  subject_kind,
+  subject_key,
+  window_start,
+  request_count,
+  updated_at
+)
+values
+  (
+    'trip_plan',
+    'subject',
+    repeat('1', 64),
+    date_trunc('minute', clock_timestamp() - interval '2 days'),
+    9,
+    clock_timestamp() - interval '2 days'
+  ),
+  (
+    'trip_plan',
+    'subject',
+    repeat('2', 64),
+    date_trunc('minute', clock_timestamp()),
+    3,
+    clock_timestamp()
+  );
+
+do $$
+declare
+  deleted_count integer;
+  rejected boolean := false;
+begin
+  select public.cleanup_trip_rate_limit_counters()
+  into deleted_count;
+
+  if deleted_count <> 1 then
+    raise exception
+      'Trip limiter cleanup deleted unexpected row count: %',
+      deleted_count;
+  end if;
+
+  if exists (
+    select 1
+    from public.trip_rate_limit_counters
+    where subject_key = repeat('1', 64)
+  ) then
+    raise exception
+      'stale Trip limiter counter survived cleanup';
+  end if;
+
+  if not exists (
+    select 1
+    from public.trip_rate_limit_counters
+    where subject_key = repeat('2', 64)
+      and request_count = 3
+  ) then
+    raise exception
+      'active Trip limiter counter was removed by cleanup';
+  end if;
+
+  begin
+    perform public.cleanup_trip_rate_limit_counters(
+      interval '1 minute'
+    );
+  exception
+    when others then
+      if sqlerrm like
+        '%cleanup retention must be between 5 minutes and 30 days%'
+      then
+        rejected := true;
+      else
+        raise;
+      end if;
+  end;
+
+  if not rejected then
+    raise exception
+      'unsafe Trip limiter cleanup retention was accepted';
+  end if;
+
+  raise notice
+    'PASS: restricted Trip limiter cleanup and retention contract';
 end
 $$;
 

@@ -217,6 +217,10 @@
     {
       "file": "20261025085429_f2_public_demo_visibility_hardening.sql",
       "sha256": "75fb8e42d25e5a2c1d821e7a0def45c3ab91bb515fb7425b51b29ac545a7bba4"
+    },
+    {
+      "file": "20261025182500_f2_trip_rate_limit_review_hardening.sql",
+      "sha256": "7600579485e7e0a93a5cf336416adb5e1061f9c06cb2c0bffa1d5e371489c91a"
     }
   ]
 }
