@@ -55,7 +55,7 @@ check("invalid global longitude yields no projection",()=>assert.equal(projectNi
 check("valid global coordinate outside Nigeria bounds yields no projection",()=>assert.equal(projectNigeriaCoordinate(5.6037,-0.1870),null));
 check("outside-Nigeria coordinates are not edge clamped",()=>assert.equal(projectNigeriaCoordinate(6.5,2.0),null));
 
-const base={record_source_type:"official_directory",publication_status:"published",registration_status:"pending",latitude:6.3,longitude:5.6,location:{},location_precision:"approximate",address:"Benin City"};
+const base={record_source_type:"official_directory",publication_status:"published",registration_status:"pending",is_demo:false,latitude:6.3,longitude:5.6,location:{},location_precision:"approximate",address:"Benin City"};
 check("unconfirmed public record receives no map eligibility",()=>assert.equal(isMapEligibleStation({...base,location_precision:"unconfirmed"}),false));
 check("published approximate record with complete coordinates is map eligible",()=>assert.equal(isMapEligibleStation(base),true));
 check("published exact record with complete coordinates is map eligible",()=>assert.equal(isMapEligibleStation({...base,location_precision:"exact"}),true));

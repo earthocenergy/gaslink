@@ -2,6 +2,7 @@ export type PublicStationVisibilityRecord = {
   record_source_type: string | null;
   publication_status: string | null;
   registration_status: string | null;
+  is_demo: boolean | null;
   latitude?: number | null;
   longitude?: number | null;
   location?: unknown | null;
@@ -10,12 +11,13 @@ export type PublicStationVisibilityRecord = {
 };
 
 export const PUBLIC_STATION_VISIBILITY_OR_FILTER =
-  "and(record_source_type.eq.official_directory,publication_status.eq.published),and(record_source_type.neq.official_directory,registration_status.eq.approved)";
+  "and(is_demo.eq.false,record_source_type.eq.official_directory,publication_status.eq.published),and(is_demo.eq.false,record_source_type.neq.official_directory,registration_status.eq.approved)";
 
 export function isPubliclyDiscoverableStation(station: PublicStationVisibilityRecord) {
   // Production record_source_type is NOT NULL. This defensive branch keeps
   // TypeScript behavior aligned with SQL/PostgREST null semantics if malformed
   // or partially hydrated data is ever passed to this helper.
+  if (station.is_demo !== false) return false;
   if (station.record_source_type == null) return false;
   if (station.record_source_type === "official_directory") {
     return station.publication_status === "published";

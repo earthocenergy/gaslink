@@ -12,15 +12,10 @@ type Station={
  record_source_type:string|null;record_source_name:string|null;publication_status:string|null;registration_status:string|null;
  latitude:number|null;longitude:number|null;location:unknown|null;location_precision:string|null;
 };
-const fallback:Station[]=[
- {id:"ph",name:"Demo CNG Station - Port Harcourt",operator_name:"Demo Operator",address:"Aba Road corridor, Port Harcourt",city:"Port Harcourt",state:"Rivers",status:"available",price_per_scm:520,queue_minutes:15,open_now:true,is_demo:true,is_verified:false,record_source_type:"demo",record_source_name:"CNGx demo",publication_status:"published",registration_status:"approved",latitude:null,longitude:null,location:null,location_precision:"unconfirmed"},
- {id:"aba",name:"Demo CNG Station - Aba",operator_name:"Demo Operator",address:"Aba industrial corridor",city:"Aba",state:"Abia",status:"low_supply",price_per_scm:510,queue_minutes:30,open_now:true,is_demo:true,is_verified:false,record_source_type:"demo",record_source_name:"CNGx demo",publication_status:"published",registration_status:"approved",latitude:null,longitude:null,location:null,location_precision:"unconfirmed"},
- {id:"owerri",name:"Demo CNG Station - Owerri",operator_name:"Demo Operator",address:"Owerri urban corridor",city:"Owerri",state:"Imo",status:"unknown",price_per_scm:null,queue_minutes:null,open_now:null,is_demo:true,is_verified:false,record_source_type:"demo",record_source_name:"CNGx demo",publication_status:"published",registration_status:"approved",latitude:null,longitude:null,location:null,location_precision:"unconfirmed"}
-];
 const labels:Record<string,string>={available:"Available",low_supply:"Low supply",out_of_gas:"Out of gas",offline:"Offline",unknown:"Unknown"};
 export default function Home(){
  const router=useRouter();
- const [stations,setStations]=useState<Station[]>(fallback),[q,setQ]=useState(""),[tab,setTab]=useState("home"),[signedIn,setSignedIn]=useState(false);
+ const [stations,setStations]=useState<Station[]>([]),[q,setQ]=useState(""),[tab,setTab]=useState("home"),[signedIn,setSignedIn]=useState(false);
  const [fuelPrice,setFuelPrice]=useState(1100),[monthlyKm,setMonthlyKm]=useState(1500),[petrolKmL,setPetrolKmL]=useState(10),[cngKmScm,setCngKmScm]=useState(11),[cngPrice,setCngPrice]=useState(520);
  useEffect(()=>{
   const s=createClient();
@@ -28,12 +23,12 @@ export default function Home(){
   s.from("stations")
    .select("id,name,operator_name,address,city,state,status,price_per_scm,queue_minutes,open_now,is_demo,is_verified,record_source_type,record_source_name,publication_status,registration_status,latitude,longitude,location,location_precision")
    .or(PUBLIC_STATION_VISIBILITY_OR_FILTER)
-   .then(({data})=>{if(data?.length)setStations(data as Station[])});
+   .then(({data})=>{setStations((data||[]) as Station[])});
  },[]);
  const shown=useMemo(()=>stations.filter(s=>(s.name+" "+s.city+" "+s.state).toLowerCase().includes(q.toLowerCase())),[stations,q]);
  const petrol=monthlyKm/petrolKmL*fuelPrice,cng=monthlyKm/cngKmScm*cngPrice,saving=Math.max(0,petrol-cng);
  return <main><header><div className="brand"><span className="mark">x</span><div><b>CNGx</b></div></div><nav className="topNav"><button onClick={()=>router.push("/stations")}>Find CNG</button><button onClick={()=>router.push("/marketplace")}>Marketplace</button><button onClick={()=>router.push("/services")}>Services</button><button onClick={()=>router.push("/business")}>For Business</button></nav><button className="ghost" onClick={()=>router.push(signedIn?"/dashboard":"/auth")}><UserRound size={19}/> {signedIn?"Dashboard":"Sign in"}</button></header>
- <section className="hero"><div className="eyebrow"><ShieldCheck size={15}/> Nigeria&apos;s CNG access companion</div><h1>Find gas.<br/>Know before you go.</h1><p>Discover public CNG station records, check available evidence and plan a smarter journey.</p><div className="search"><Search/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search city, state or station"/><button onClick={()=>router.push("/stations?q="+encodeURIComponent(q))}>Find CNG</button></div><div className="notice"><b>Phase 0 demo:</b> Sample stations and prices are clearly marked. CNGx will not present them as live verified data.</div></section>
+ <section className="hero"><div className="eyebrow"><ShieldCheck size={15}/> Nigeria&apos;s CNG access companion</div><h1>Find gas.<br/>Know before you go.</h1><p>Discover public CNG station records, check available evidence and plan a smarter journey.</p><div className="search"><Search/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search city, state or station"/><button onClick={()=>router.push("/stations?q="+encodeURIComponent(q))}>Find CNG</button></div><div className="notice"><b>Public directory:</b> Demo and test station records are excluded from public discovery.</div></section>
  {tab==="home"&&<><section className="quick"><button onClick={()=>router.push("/stations")}><MapPin/><b>Find a station</b><span>Public station directory</span></button><button onClick={()=>router.push("/trip")}><Route/><b>Plan a trip</b><span>Find refuelling options</span></button><button onClick={()=>router.push("/savings")}><Calculator/><b>Calculate savings</b><span>Compare CNG with petrol</span></button><button onClick={()=>router.push("/marketplace")}><Fuel/><b>CNG Marketplace</b><span>Buy & sell CNG equipment</span></button><button onClick={()=>router.push("/services")}><ShieldCheck/><b>CNG Services</b><span>Conversion, maintenance & technical support</span></button><button onClick={()=>router.push("/business")}><Gauge/><b>CNG for Business</b><span>Fleet supply, procurement & infrastructure</span></button></section><Stations rows={shown}/></>}
  {tab==="stations"&&<Stations rows={shown}/>}
  {tab==="trip"&&<section className="panel"><div className="eyebrow"><Navigation size={15}/> Trip planner</div><h2>Plan your CNG journey</h2><p className="muted">Phase 0 uses station discovery rather than paid turn-by-turn routing.</p><label>Starting point<input placeholder="e.g. Port Harcourt"/></label><label>Destination<input placeholder="e.g. Aba"/></label><label>Estimated CNG range (km)<input type="number" defaultValue="250"/></label><button className="primary" onClick={()=>setTab("stations")}>Show refuelling options</button></section>}
