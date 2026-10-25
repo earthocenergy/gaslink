@@ -1,6 +1,6 @@
 import{NextRequest,NextResponse}from"next/server";import{MapboxRoutingProvider}from"@/lib/routing/mapbox";import{effectiveRangeKm,planStops,trustWarnings}from"@/lib/trip/planner";import type{TripPlanRequest,TripPlanResponse,TripStation}from"@/lib/trip/contracts";import{createRouteSupabase}from"@/lib/supabase/server-route";import{checkTripRateLimit}from"@/lib/security/trip-rate-limit";
 const fail=(failureReason:TripPlanResponse["failureReason"],message:string,status=400)=>NextResponse.json({ok:false,failureReason,message,provider:"mapbox",contractVersion:"v1"} satisfies TripPlanResponse,{status,headers:{"Cache-Control":"no-store"}});
-export async function POST(request:NextRequest){const rate=checkTripRateLimit(request,"trip_plan");if(!rate.allowed&&"unavailable" in rate)return NextResponse.json({
+export async function POST(request:NextRequest){const rate=await checkTripRateLimit(request,"trip_plan");if(!rate.allowed&&"unavailable" in rate)return NextResponse.json({
         ok:false,
         failureReason:"RATE_LIMIT_UNAVAILABLE",
         message:"Trip services are temporarily unavailable.",

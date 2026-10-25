@@ -1,98 +1,247 @@
 import crypto from "node:crypto";
+import { isIP } from "node:net";
+import { createClient } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
 
-export type TripRateAction = "trip_plan" | "place_resolution";
+export type TripRateAction =
+  | "trip_plan"
+  | "place_resolution";
 
 export type TripRateResult =
   | { allowed: true }
   | { allowed: false; retryAfter: number }
   | { allowed: false; unavailable: true };
 
-type Counter = {
-  start: number;
-  count: number;
+type SharedDecision = {
+  allowed?: boolean;
+  retry_after_seconds?: number | null;
 };
 
-const WINDOW_MS = 60_000;
-const MAX_KEYS = 4_096;
-const counters = new Map<string, Counter>();
+type RpcResult = {
+  data: unknown;
+  error: unknown;
+};
+
+export type TripRateRpc = (
+  args: {
+    p_action: TripRateAction;
+    p_subject_key: string;
+    p_network_key: string;
+  },
+) => Promise<RpcResult>;
+
+export type TripRateDependencies = {
+  userId?: string | null;
+  rpc?: TripRateRpc;
+};
 
 function configuredSecret(): string | null {
   const secret = process.env.ABUSE_FINGERPRINT_SECRET;
 
-  if (process.env.NODE_ENV === "production") {
-    if (!secret || secret.length < 32 || secret === "development-only") {
-      return null;
-    }
+  if (!secret || secret.length < 32) {
+    return null;
   }
 
-  return secret || "development-only";
+  if (
+    process.env.NODE_ENV === "production"
+    && secret === "development-only"
+  ) {
+    return null;
+  }
+
+  return secret;
 }
 
-function prune(now: number): void {
-  for (const [key, value] of counters) {
-    if (now - value.start >= WINDOW_MS) {
-      counters.delete(key);
-    }
+function trustedNetworkAddress(
+  request: NextRequest,
+): string | null {
+  const trusted =
+    request.headers.get("x-vercel-forwarded-for");
+
+  if (!trusted) {
+    return process.env.NODE_ENV === "production"
+      ? null
+      : "127.0.0.1";
   }
+
+  const first = trusted.split(",")[0]?.trim() || "";
+
+  return isIP(first) ? first : null;
 }
 
 function fingerprint(
-  action: TripRateAction,
+  scope: string,
+  value: string,
   secret: string,
-): string {
-  // No caller-supplied IP, forwarded header or User-Agent is
-  // accepted as an independently verified client identity.
+) {
   return crypto
     .createHmac("sha256", secret)
-    .update(`trip:v1:${action}:anonymous`)
+    .update(`cngx:trip:v2:${scope}:${value}`)
     .digest("hex");
 }
 
-export function checkTripRateLimit(
-  _request: NextRequest,
-  action: TripRateAction,
-): TripRateResult {
-  const secret = configuredSecret();
+async function authenticatedUserId(
+  request: NextRequest,
+): Promise<string | null> {
+  try {
+    const { createRouteSupabase } =
+      await import("@/lib/supabase/server-route");
 
-  if (!secret) {
-    return { allowed: false, unavailable: true };
+    const { supabase } = createRouteSupabase(request);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    return user?.id || null;
+  } catch {
+    return null;
   }
+}
 
-  // Process-local enforcement is not globally reliable across
-  // distributed instances. Production requires a shared backend
-  // and an approved trusted-identity configuration.
-  if (process.env.NODE_ENV === "production") {
-    return { allowed: false, unavailable: true };
-  }
+async function sharedRateRpc(
+  args: {
+    p_action: TripRateAction;
+    p_subject_key: string;
+    p_network_key: string;
+  },
+): Promise<RpcResult> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  const now = Date.now();
-  const limit = action === "trip_plan" ? 12 : 60;
-  const key = fingerprint(action, secret);
-
-  prune(now);
-
-  const existing = counters.get(key);
-
-  if (!existing || now - existing.start >= WINDOW_MS) {
-    if (counters.size >= MAX_KEYS) {
-      return { allowed: false, unavailable: true };
-    }
-
-    counters.set(key, { start: now, count: 1 });
-    return { allowed: true };
-  }
-
-  if (existing.count >= limit) {
+  if (!url || !serviceKey) {
     return {
-      allowed: false,
-      retryAfter: Math.max(
-        1,
-        Math.ceil((WINDOW_MS - (now - existing.start)) / 1000),
+      data: null,
+      error: new Error(
+        "Shared rate-limit backend unavailable",
       ),
     };
   }
 
-  existing.count += 1;
-  return { allowed: true };
+  const client = createClient(url, serviceKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
+
+  return client.rpc(
+    "check_trip_rate_limit_shared",
+    args,
+  );
+}
+
+function normalizeDecision(
+  data: unknown,
+): SharedDecision | null {
+  const value = Array.isArray(data)
+    ? data[0]
+    : data;
+
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  return value as SharedDecision;
+}
+
+export async function checkTripRateLimit(
+  request: NextRequest,
+  action: TripRateAction,
+  dependencies: TripRateDependencies = {},
+): Promise<TripRateResult> {
+  const secret = configuredSecret();
+
+  if (!secret) {
+    return {
+      allowed: false,
+      unavailable: true,
+    };
+  }
+
+  const networkAddress =
+    trustedNetworkAddress(request);
+
+  if (!networkAddress) {
+    return {
+      allowed: false,
+      unavailable: true,
+    };
+  }
+
+  const userId =
+    dependencies.userId !== undefined
+      ? dependencies.userId
+      : await authenticatedUserId(request);
+
+  const networkKey = fingerprint(
+    "network",
+    networkAddress,
+    secret,
+  );
+
+  const subjectKey = userId
+    ? fingerprint("user", userId, secret)
+    : fingerprint(
+        "anonymous-network",
+        networkAddress,
+        secret,
+      );
+
+  const rpc = dependencies.rpc || sharedRateRpc;
+
+  let result: RpcResult;
+
+  try {
+    result = await rpc({
+      p_action: action,
+      p_subject_key: subjectKey,
+      p_network_key: networkKey,
+    });
+  } catch {
+    return {
+      allowed: false,
+      unavailable: true,
+    };
+  }
+
+  if (result.error) {
+    return {
+      allowed: false,
+      unavailable: true,
+    };
+  }
+
+  const decision = normalizeDecision(result.data);
+
+  if (!decision || typeof decision.allowed !== "boolean") {
+    return {
+      allowed: false,
+      unavailable: true,
+    };
+  }
+
+  if (decision.allowed) {
+    return { allowed: true };
+  }
+
+  if (
+    typeof decision.retry_after_seconds !== "number"
+    || !Number.isFinite(decision.retry_after_seconds)
+  ) {
+    return {
+      allowed: false,
+      unavailable: true,
+    };
+  }
+
+  return {
+    allowed: false,
+    retryAfter: Math.max(
+      1,
+      Math.ceil(decision.retry_after_seconds),
+    ),
+  };
 }

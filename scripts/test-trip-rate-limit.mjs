@@ -1,16 +1,24 @@
 import assert from "node:assert/strict";
-import { checkTripRateLimit } from "../lib/security/trip-rate-limit.ts";
+import fs from "node:fs";
+import {
+  checkTripRateLimit,
+} from "../lib/security/trip-rate-limit.ts";
 
-const originalNow = Date.now;
-const originalSecret = process.env.ABUSE_FINGERPRINT_SECRET;
+const originalSecret =
+  process.env.ABUSE_FINGERPRINT_SECRET;
 
-let now = 1_000_000;
-let count = 0;
+process.env.ABUSE_FINGERPRINT_SECRET =
+  "offline-test-fingerprint-secret-0123456789abcdef";
 
-function check(name, fn) {
-  fn();
-  count++;
-  console.log(`PASS ${count}: ${name}`);
+let passed = 0;
+
+function check(label, fn) {
+  return Promise.resolve()
+    .then(fn)
+    .then(() => {
+      passed++;
+      console.log(`PASS ${passed}: ${label}`);
+    });
 }
 
 function request(headers = {}) {
@@ -20,134 +28,356 @@ function request(headers = {}) {
 }
 
 try {
-  Date.now = () => now;
-  process.env.ABUSE_FINGERPRINT_SECRET =
-    "offline-test-fingerprint-secret-0123456789abcdef";
-
-  const first = request({
-    "user-agent": "client-a",
-    "x-forwarded-for": "198.51.100.10",
+  const base = request({
+    "x-vercel-forwarded-for": "198.51.100.10",
+    "x-forwarded-for": "203.0.113.77",
+    "x-real-ip": "203.0.113.88",
   });
 
-  check("trip threshold permits 12 requests", () => {
-    for (let i = 0; i < 12; i++) {
-      assert.deepEqual(
-        checkTripRateLimit(first, "trip_plan"),
-        { allowed: true },
+  await check(
+    "shared backend allowed decision passes",
+    async () => {
+      const result = await checkTripRateLimit(
+        base,
+        "trip_plan",
+        {
+          userId: null,
+          rpc: async () => ({
+            data: [{
+              allowed: true,
+              retry_after_seconds: null,
+            }],
+            error: null,
+          }),
+        },
       );
-    }
-  });
 
-  check("trip request 13 is throttled", () => {
-    assert.deepEqual(
-      checkTripRateLimit(first, "trip_plan"),
-      { allowed: false, retryAfter: 60 },
-    );
-  });
+      assert.deepEqual(result, {
+        allowed: true,
+      });
+    },
+  );
 
-  check("forwarded headers cannot bypass the limit", () => {
-    const spoofed = request({
-      "user-agent": "client-b",
-      "x-forwarded-for": "203.0.113.99",
-      "x-real-ip": "203.0.113.100",
-      "cf-connecting-ip": "203.0.113.101",
-    });
-
-    assert.deepEqual(
-      checkTripRateLimit(spoofed, "trip_plan"),
-      { allowed: false, retryAfter: 60 },
-    );
-  });
-
-  check("retry guidance decreases with elapsed time", () => {
-    now += 15_000;
-    assert.deepEqual(
-      checkTripRateLimit(first, "trip_plan"),
-      { allowed: false, retryAfter: 45 },
-    );
-  });
-
-  check("place search has independent 60-request quota", () => {
-    for (let i = 0; i < 60; i++) {
-      assert.deepEqual(
-        checkTripRateLimit(first, "place_resolution"),
-        { allowed: true },
+  await check(
+    "shared backend rejection preserves retry",
+    async () => {
+      const result = await checkTripRateLimit(
+        base,
+        "trip_plan",
+        {
+          userId: null,
+          rpc: async () => ({
+            data: [{
+              allowed: false,
+              retry_after_seconds: 17,
+            }],
+            error: null,
+          }),
+        },
       );
-    }
 
-    assert.deepEqual(
-      checkTripRateLimit(first, "place_resolution"),
-      { allowed: false, retryAfter: 60 },
-    );
-  });
+      assert.deepEqual(result, {
+        allowed: false,
+        retryAfter: 17,
+      });
+    },
+  );
 
-  check("expired windows reset", () => {
-    now += 60_000;
+  await check(
+    "backend error fails closed",
+    async () => {
+      const result = await checkTripRateLimit(
+        base,
+        "trip_plan",
+        {
+          userId: null,
+          rpc: async () => ({
+            data: null,
+            error: new Error("backend unavailable"),
+          }),
+        },
+      );
 
-    assert.deepEqual(
-      checkTripRateLimit(first, "trip_plan"),
-      { allowed: true },
-    );
+      assert.deepEqual(result, {
+        allowed: false,
+        unavailable: true,
+      });
+    },
+  );
 
-    assert.deepEqual(
-      checkTripRateLimit(first, "place_resolution"),
-      { allowed: true },
-    );
-  });
+  await check(
+    "backend exception fails closed",
+    async () => {
+      const result = await checkTripRateLimit(
+        base,
+        "trip_plan",
+        {
+          userId: null,
+          rpc: async () => {
+            throw new Error("backend unavailable");
+          },
+        },
+      );
 
-  check("missing production secret is rejected", () => {
-    const source = requireSource();
+      assert.deepEqual(result, {
+        allowed: false,
+        unavailable: true,
+      });
+    },
+  );
 
-    assert.match(
-      source,
-      /process\.env\.NODE_ENV === "production"/,
-    );
+  await check(
+    "malformed backend response fails closed",
+    async () => {
+      const result = await checkTripRateLimit(
+        base,
+        "place_resolution",
+        {
+          userId: null,
+          rpc: async () => ({
+            data: [{ unexpected: true }],
+            error: null,
+          }),
+        },
+      );
 
-    assert.match(
-      source,
-      /secret\.length < 32/,
-    );
-  });
+      assert.deepEqual(result, {
+        allowed: false,
+        unavailable: true,
+      });
+    },
+  );
 
-  check("production shared-enforcement gate exists", () => {
-    const source = requireSource();
+  await check(
+    "client-controlled forwarding headers do not affect fingerprint",
+    async () => {
+      const captures = [];
 
-    assert.match(
-      source,
-      /Process-local enforcement is not globally reliable/,
-    );
+      const rpc = async args => {
+        captures.push(args);
 
-    assert.match(
-      source,
-      /return \{ allowed: false, unavailable: true \}/,
-    );
-  });
+        return {
+          data: [{
+            allowed: true,
+            retry_after_seconds: null,
+          }],
+          error: null,
+        };
+      };
 
-  check("counter store is bounded and expired entries pruned", () => {
-    const source = requireSource();
+      await checkTripRateLimit(
+        request({
+          "x-vercel-forwarded-for":
+            "198.51.100.10",
+          "x-forwarded-for":
+            "203.0.113.1",
+        }),
+        "trip_plan",
+        {
+          userId: null,
+          rpc,
+        },
+      );
 
-    assert.match(source, /MAX_KEYS = 4_096/);
-    assert.match(source, /function prune\(now: number\)/);
-    assert.match(source, /counters\.delete\(key\)/);
-    assert.match(source, /counters\.size >= MAX_KEYS/);
-  });
+      await checkTripRateLimit(
+        request({
+          "x-vercel-forwarded-for":
+            "198.51.100.10",
+          "x-forwarded-for":
+            "203.0.113.200",
+          "x-real-ip":
+            "203.0.113.201",
+          "cf-connecting-ip":
+            "203.0.113.202",
+        }),
+        "trip_plan",
+        {
+          userId: null,
+          rpc,
+        },
+      );
 
-  console.log(`ALL ${count} TRIP RATE-LIMIT TESTS PASSED`);
+      assert.equal(captures.length, 2);
+
+      assert.equal(
+        captures[0].p_network_key,
+        captures[1].p_network_key,
+      );
+
+      assert.equal(
+        captures[0].p_subject_key,
+        captures[1].p_subject_key,
+      );
+    },
+  );
+
+  await check(
+    "authenticated identity receives distinct subject fingerprint",
+    async () => {
+      const captures = [];
+
+      const rpc = async args => {
+        captures.push(args);
+
+        return {
+          data: [{
+            allowed: true,
+            retry_after_seconds: null,
+          }],
+          error: null,
+        };
+      };
+
+      await checkTripRateLimit(
+        base,
+        "trip_plan",
+        {
+          userId: null,
+          rpc,
+        },
+      );
+
+      await checkTripRateLimit(
+        base,
+        "trip_plan",
+        {
+          userId:
+            "10000000-0000-0000-0000-000000000001",
+          rpc,
+        },
+      );
+
+      assert.equal(
+        captures[0].p_network_key,
+        captures[1].p_network_key,
+      );
+
+      assert.notEqual(
+        captures[0].p_subject_key,
+        captures[1].p_subject_key,
+      );
+    },
+  );
+
+  await check(
+    "fingerprints are fixed 64-character HMAC values",
+    async () => {
+      let captured;
+
+      await checkTripRateLimit(
+        base,
+        "trip_plan",
+        {
+          userId: null,
+          rpc: async args => {
+            captured = args;
+
+            return {
+              data: [{
+                allowed: true,
+                retry_after_seconds: null,
+              }],
+              error: null,
+            };
+          },
+        },
+      );
+
+      assert.match(
+        captured.p_subject_key,
+        /^[0-9a-f]{64}$/,
+      );
+
+      assert.match(
+        captured.p_network_key,
+        /^[0-9a-f]{64}$/,
+      );
+    },
+  );
+
+  await check(
+    "source requires Vercel-controlled network identity in production",
+    () => {
+      const source = fs.readFileSync(
+        "lib/security/trip-rate-limit.ts",
+        "utf8",
+      );
+
+      assert.match(
+        source,
+        /x-vercel-forwarded-for/,
+      );
+
+      assert.match(
+        source,
+        /process\.env\.NODE_ENV === "production"/,
+      );
+
+      assert.doesNotMatch(
+        source,
+        /headers\.get\("x-forwarded-for"\)/,
+      );
+
+      assert.doesNotMatch(
+        source,
+        /headers\.get\("x-real-ip"\)/,
+      );
+
+      assert.doesNotMatch(
+        source,
+        /headers\.get\("cf-connecting-ip"\)/,
+      );
+    },
+  );
+
+  await check(
+    "service-role credential remains server-only",
+    () => {
+      const source = fs.readFileSync(
+        "lib/security/trip-rate-limit.ts",
+        "utf8",
+      );
+
+      assert.match(
+        source,
+        /SUPABASE_SERVICE_ROLE_KEY/,
+      );
+
+      assert.doesNotMatch(
+        source,
+        /NEXT_PUBLIC_SUPABASE_SERVICE_ROLE/,
+      );
+    },
+  );
+
+  await check(
+    "process-local counter store is removed",
+    () => {
+      const source = fs.readFileSync(
+        "lib/security/trip-rate-limit.ts",
+        "utf8",
+      );
+
+      assert.doesNotMatch(
+        source,
+        /new Map</,
+      );
+
+      assert.doesNotMatch(
+        source,
+        /MAX_KEYS/,
+      );
+    },
+  );
+
+  console.log(
+    `ALL ${passed} SHARED TRIP RATE-LIMIT TESTS PASSED`,
+  );
 } finally {
-  Date.now = originalNow;
-
   if (originalSecret === undefined) {
     delete process.env.ABUSE_FINGERPRINT_SECRET;
   } else {
-    process.env.ABUSE_FINGERPRINT_SECRET = originalSecret;
+    process.env.ABUSE_FINGERPRINT_SECRET =
+      originalSecret;
   }
 }
-
-function requireSource() {
-  return readFileSync(
-    new URL("../lib/security/trip-rate-limit.ts", import.meta.url),
-    "utf8",
-  );
-}
-
-import { readFileSync } from "node:fs";

@@ -1,5 +1,5 @@
 import{NextRequest,NextResponse}from"next/server";import{MapboxRoutingProvider}from"@/lib/routing/mapbox";import{checkTripRateLimit}from"@/lib/security/trip-rate-limit";
-export async function GET(request:NextRequest){const rate=checkTripRateLimit(request,"place_resolution");if(!rate.allowed&&"unavailable" in rate)return NextResponse.json({
+export async function GET(request:NextRequest){const rate=await checkTripRateLimit(request,"place_resolution");if(!rate.allowed&&"unavailable" in rate)return NextResponse.json({
         ok:false,
         reason:"RATE_LIMIT_UNAVAILABLE",
         message:"Trip services are temporarily unavailable."
