@@ -22,7 +22,10 @@
     "test:trust-contract": "node scripts/test-trust-contract.mjs",
     "test:trip": "node scripts/test-trip-intelligence.mjs && node scripts/test-trip-mapbox-http.mjs && node scripts/test-trip-rate-limit.mjs",
     "test:trip:postgis": "bash scripts/test-trip-postgis.sh",
-    "test:station-load": "node scripts/test-station-load-contract.mjs"
+    "test:station-load": "node scripts/test-station-load-contract.mjs",
+    "test:f2-operator": "node scripts/test-f2-operator-authorization.mjs",
+    "test:f2-db": "bash scripts/test-f2-database-readiness.sh",
+    "test:f2-demo": "node scripts/test-f2-demo-visibility.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.7.0",

@@ -205,6 +205,18 @@
     {
       "file": "20260929210000_trip_intelligence_corridor.sql",
       "sha256": "5f07ef9207f57643e1b3e260d2b64908207607cf63f4b0ed4503ee9861d70e32"
+    },
+    {
+      "file": "20261025063339_f2_operator_authorization_hardening.sql",
+      "sha256": "3f00138e74cb5d7df2a9b1406d722ef0af26c3ab59ee029f5a806a4fa9f9f8c6"
+    },
+    {
+      "file": "20261025063902_f2_trip_shared_rate_limit.sql",
+      "sha256": "cf3a88aeed64165cc98d7bb72d594decfc34b8a7d296d23b73946c2234a957c6"
+    },
+    {
+      "file": "20261025085429_f2_public_demo_visibility_hardening.sql",
+      "sha256": "75fb8e42d25e5a2c1d821e7a0def45c3ab91bb515fb7425b51b29ac545a7bba4"
     }
   ]
 }
